@@ -1,0 +1,25 @@
+---
+description: Mandatory end-of-task verification checklist — explicitly stated at the end of every response.
+alwaysApply: true
+---
+
+# Verification Checklist
+
+End every task with an explicit checklist. Do not say "done" — state the actual results.
+
+Tailor to what was built. Omit items that don't apply; add specific ones that do.
+
+```
+## Verification
+- [ ] pnpm run build — zero TypeScript errors
+- [ ] pnpm run lint — zero ESLint/Prettier errors
+- [ ] [specific endpoint] manually verified: GET /api/v1/health → 200 { status: ok }
+- [ ] No unintended scope creep (list adjacent changes if any)
+- [ ] No new npm packages added without flagging
+- [ ] Soft delete filter present on all queries touching bookings/users (if schema changed)
+- [ ] 2dsphere index defined alongside any new geo field (if schema changed)
+- [ ] GeoJSON coordinates in [longitude, latitude] order (if geo field added)
+- [ ] No feature/business logic added if task was "setup" or "scaffolding" only
+```
+
+If something failed, say so explicitly — do not mark it complete.

@@ -1,0 +1,83 @@
+---
+description: API response envelope, pagination, stable error codes, timestamps, GeoJSON field order, and mobile-specific patterns.
+globs: src/**/*.ts
+alwaysApply: false
+---
+
+# API Conventions
+
+## Response Envelope
+
+Every endpoint wraps its response:
+
+```typescript
+interface ApiResponse<T> {
+  success: boolean;
+  data: T;
+  error?: { code: string; message: string };
+}
+```
+
+Never return a raw object or array at the top level.
+
+## Error Codes — Stable, Switchable
+
+The mobile app `switch`es on `code` — never make the client parse error strings.
+
+```typescript
+// BAD — mobile must parse the message string
+throw new BadRequestException('The slot is already taken');
+
+// GOOD — stable machine-readable code
+throw new ConflictException({ code: 'BOOKING_SLOT_TAKEN', message: 'This slot is already booked' });
+```
+
+## Pagination
+
+- Feeds and lists: cursor-based (`nextCursor` token) preferred.
+- Admin/dashboard: offset acceptable.
+- **Never return unbounded arrays.** Every list endpoint enforces a `limit`.
+
+## Timestamps
+
+All timestamps ISO 8601 UTC: `2025-01-15T10:30:00.000Z`. Let the client handle timezone display.
+
+## GeoJSON — Critical Field Order
+
+`[longitude, latitude]` — NOT `[lat, lng]`. Wrong order causes silent geo query failures.
+
+```typescript
+// BAD — reversed coordinates
+location: { type: 'Point', coordinates: [latitude, longitude] }
+
+// GOOD — GeoJSON standard
+location: { type: 'Point', coordinates: [longitude, latitude] }
+```
+
+Double-check every geo field added.
+
+## File Uploads
+
+Go through signed URLs (S3/Cloudinary pattern). Never accept raw multipart bodies into the NestJS process for anything beyond small avatars.
+
+## Sync-Heavy Endpoints
+
+Bookings and provider availability endpoints MUST support `updatedAfter` query param or `If-Modified-Since`/ETags for incremental mobile fetches — avoid full reloads.
+
+## Push Notification Payloads
+
+Define a typed interface per notification type. No ad-hoc string templates scattered across services.
+
+```typescript
+// BAD
+notify(userId, `Your booking at ${time} is confirmed`);
+
+// GOOD
+interface BookingConfirmedPayload {
+  type: 'BOOKING_CONFIRMED';
+  bookingId: string;
+  providerName: string;
+  scheduledAt: string;
+}
+notify<BookingConfirmedPayload>(userId, { type: 'BOOKING_CONFIRMED', bookingId, providerName, scheduledAt });
+```

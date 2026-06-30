@@ -1,0 +1,48 @@
+---
+description: MongoDB schema rules — required 2dsphere indexes for geo queries, compound indexes, and soft deletes.
+globs: src/**/*.schema.ts
+alwaysApply: false
+---
+
+# Data & Schema Rules
+
+## 2dsphere Index — Required for Geo Queries
+
+Any collection with `$near`, `$geoWithin`, or `$geoIntersects` queries MUST define a `2dsphere` index. Missing index = full collection scan.
+
+```typescript
+// Schema field
+@Prop({ type: { type: String, enum: ['Point'], default: 'Point' }, coordinates: [Number] })
+location: { type: string; coordinates: [number, number] };
+
+// Index — not optional
+ProviderSchema.index({ location: '2dsphere' });
+```
+
+Flag any geo query added without a corresponding 2dsphere index.
+
+## Compound Indexes — Query First, Schema Second
+
+Design indexes from query patterns before writing the schema, not after.
+
+```typescript
+// Provider search: active providers, ordered by geo distance
+ProviderSchema.index({ status: 1, location: '2dsphere' });
+
+// Booking lookup: by provider, filtered by status, sorted by date
+BookingSchema.index({ providerId: 1, status: 1, scheduledAt: -1 });
+
+// User bookings: by customer, filtered by status
+BookingSchema.index({ customerId: 1, status: 1 });
+```
+
+## Soft Deletes — Never Hard Delete
+
+Bookings and users are never hard-deleted — they have payment and history ties.
+
+```typescript
+@Prop({ type: Date, default: null })
+deletedAt: Date | null;
+```
+
+Default queries must filter `{ deletedAt: null }`. Use a Mongoose pre-query middleware or global plugin per collection to enforce this — do not rely on call-site filtering.

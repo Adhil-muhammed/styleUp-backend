@@ -1,0 +1,118 @@
+---
+description: Single source of truth for StyleUp backend standards covering NestJS architecture, mobile API contracts, auth, payments, data integrity, security, testing, observability, Swagger, tooling, and verification.
+globs: ["src/**/*.ts", "test/**/*.ts", "package.json", "Dockerfile", "docker-compose.yml"]
+alwaysApply: false
+---
+
+# StyleUp Backend Standards
+
+This is the single source of truth for all StyleUp backend work.
+
+## Project Context
+
+- NestJS backend serving a React Native (Expo) mobile app for a barber/beauty booking marketplace in Kerala, India.
+- Stack: MongoDB/Mongoose, Redis, JWT auth, Razorpay payments.
+- Payments are Razorpay UPI Intent only. UPI Collect is deprecated as of Feb 2026 and must not be scaffolded or referenced.
+- Architecture: modular monolith using hexagonal/ports-adapters boundaries.
+
+## Architecture
+
+- Flow is `Controller -> Service -> Repository` (ports/adapters). Business logic never lives in controllers.
+- One module per domain. No cross-module direct DB access; call the module's exported service.
+- REST only. Do not introduce gRPC.
+- DTOs are required for every request and response.
+- Never expose Mongoose documents directly from controllers; map to response DTOs.
+- Every new module ships with: module, controller, service, DTOs, schema if applicable, and barrel `index.ts`.
+
+## Mobile API Contract
+
+- Use the standard response envelope: `{ success, data, error?: { code, message } }`.
+- Pagination is required on all list endpoints. Cursor-based pagination is preferred over offset.
+- Error codes must be stable enum-like strings, for example `BOOKING_SLOT_TAKEN`. Never force the mobile client to parse raw error messages.
+- All timestamps are ISO 8601 UTC. Timezone display is the client's job.
+- GeoJSON coordinates are `[longitude, latitude]`, never `[latitude, longitude]`. Double-check this every time.
+- Booking and availability sync endpoints must support `updatedAfter` or ETags/`If-Modified-Since`.
+- Idempotency keys are required on booking creation and payment endpoints because mobile clients retry on flaky networks.
+- Configure server-side request timeouts so slow queries never hang a mobile client.
+- APIs are versioned from day one under `/api/v1`; mobile clients cannot force-update.
+
+## Auth
+
+- Login is OTP-based only. Do not add passwords.
+- JWT pair: access token 15 minutes, refresh token 7 days, refresh rotation on use.
+- Every token has a `jti` UUID v4.
+- Redis blocklist entries are keyed by `jti`; TTL must match remaining token lifetime.
+- Compose guards with `@UseGuards()` decorators. Never do manual auth or role checks inside controllers.
+- Rate-limit OTP request endpoints per phone number via Redis.
+
+## Payments
+
+- Razorpay UPI Intent only. Never use or mention UPI Collect.
+- Verify Razorpay webhook signatures before any processing.
+- Payment state transitions go through an explicit state machine: `pending -> processing -> success | failed`.
+- Never mutate booking status directly from a webhook.
+- Store all amounts as integer paise. Never use floats.
+- Do not touch payment state machine logic without explicit approval.
+
+## Data Integrity
+
+- Any geo-queried collection must define a `2dsphere` index.
+- Design compound indexes around actual query patterns.
+- Use soft deletes with `deletedAt` for bookings, users, and payment-linked records. Never hard delete them.
+- Use Mongoose sessions/transactions for operations touching booking, payment, and provider availability together.
+- Use optimistic locking or an explicit status-check guard for booking slot reservation to prevent double-booking races.
+
+## Security
+
+- Never log full phone numbers, OTPs, JWTs, or Razorpay payloads. Mask or redact logger output.
+- Helmet plus rate limiting (per-IP and per-user) applies to all public endpoints, not only auth.
+- Sanitize client-supplied query input against Mongoose operator injection (`$where`, `$gt`, etc.).
+- Secrets are never hardcoded or committed. `.env` must stay gitignored.
+- CORS whitelist must be explicit. Never use `origin: '*'`, including in development.
+
+## Testing
+
+- Unit tests are required for service-layer business logic.
+- Minimum coverage focus: payment state transitions and booking conflict checks.
+- E2E test for the full booking flow is required before the bookings module is considered done.
+- Never skip tests silently. If a task would require skipping tests, flag it explicitly.
+
+## Observability
+
+- Use structured logging with request IDs correlated end-to-end.
+- Maintain `/health` and `/health/detailed` endpoints. Detailed health includes DB and Redis latency.
+
+## API Documentation
+
+- Every DTO gets `@ApiProperty()` Swagger decorators.
+- Swagger is the contract source of truth between this backend repo and the separate mobile app repo.
+
+## Dev Tooling
+
+- Provide a seed script for local dev with sample providers, services, and time slots so the DB does not need manual repopulation after every reset.
+
+## Code Style
+
+- Keep responses, comments, and PR descriptions concise and free of filler.
+- TypeScript strict mode is required. No implicit `any`; do not use explicit `any`.
+- Prefer composition over inheritance for services.
+
+## Boundaries
+
+- Do not add new npm packages without flagging them first.
+- Do not change existing module or folder structure without explicit instruction.
+- Do not touch payment state machine logic without explicit approval.
+- Do not write feature or business logic when a task is scoped as setup or scaffolding only.
+- Do not skip tests silently.
+
+## Verification Habit
+
+End every task with an explicit checklist specific to what was built. Include applicable items such as:
+
+- Boots clean.
+- Relevant endpoint manually verified.
+- Lint and Prettier clean.
+- Tests passing.
+- No scope creep.
+- No unapproved package additions.
+- No feature/business logic added during setup/scaffolding work.

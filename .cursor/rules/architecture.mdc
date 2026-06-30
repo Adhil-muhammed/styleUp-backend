@@ -1,0 +1,62 @@
+---
+description: Hexagonal/ports-adapters architecture — layer boundaries, module isolation, and DTO discipline.
+globs: src/**/*.ts
+alwaysApply: false
+---
+
+# Architecture — Hexagonal Pattern
+
+## Layer Flow
+
+```
+Controller → Service → Repository (port/adapter)
+```
+
+- **Controllers:** HTTP routing and input validation only. Zero business logic.
+- **Services:** All business logic lives here. Injected via constructor DI.
+- **Repositories:** DB access only — one per aggregate root.
+
+## Module Isolation
+
+No cross-module direct DB access. Call the other module's exported service.
+No circular imports — if two modules need each other, extract shared logic to a common service.
+
+```typescript
+// BAD — BookingsController imports UserModel directly
+import { UserModel } from '@/modules/users/user.schema';
+
+// GOOD — BookingsService depends on UsersService via DI
+import { UsersService } from '@/modules/users/users.service';
+```
+
+## DTO Rules
+
+Every request and response has a typed DTO with `class-validator` decorators. Never return a Mongoose document from a controller — map to a response DTO first.
+
+```typescript
+// BAD — returns raw Mongoose document
+@Get(':id')
+async getBooking(@Param('id') id: string) {
+  return this.bookingsService.findById(id);
+}
+
+// GOOD — maps to response DTO
+@Get(':id')
+async getBooking(@Param('id') id: string): Promise<BookingResponseDto> {
+  const booking = await this.bookingsService.findById(id);
+  return BookingResponseDto.fromDocument(booking);
+}
+```
+
+## New Module Checklist
+
+Every new module ships with ALL of:
+
+- `*.module.ts`, `*.controller.ts`, `*.service.ts`
+- `dto/` subfolder with request + response DTOs
+- `*.schema.ts` (if DB-backed)
+- Barrel `index.ts` exporting the module class
+
+## Composition Over Inheritance
+
+Prefer injected helper services over class extension. NestJS DI handles composition naturally — do not extend service classes.

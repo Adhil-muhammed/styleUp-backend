@@ -1,0 +1,62 @@
+---
+description: Core backend project context — stack, directory layout, zero-any policy, and run commands.
+alwaysApply: true
+---
+
+# StyleUp Backend — Project Context
+
+**Stack:** NestJS 10, MongoDB/Mongoose 8, Redis (ioredis 5), JWT auth, Razorpay payments, pnpm 10.
+**Domain:** Barber/beauty booking marketplace, Kerala, India. Hexagonal/ports-adapters architecture.
+
+## Directory Layout
+
+```
+src/
+├── modules/    # Feature modules: auth, users, providers, bookings, payments, notifications
+├── common/     # Decorators, guards, filters, interceptors, pipes, middlewares
+├── infra/      # External adapters — database.module, redis.module
+├── config/     # Env validation (Joi), typed configuration loader
+├── health/     # Terminus health checks (Mongo + Redis)
+└── shared/     # Shared types and interfaces
+```
+
+## Run Commands
+
+```bash
+pnpm run build   # TypeScript compile — run after every substantive change
+pnpm run lint    # ESLint + Prettier — run before finishing any task
+```
+
+## TypeScript — Zero `any` Policy
+
+`any` is forbidden everywhere. Use `unknown` and narrow with type guards or `in` checks.
+
+```typescript
+// BAD
+function handle(data: any) { return data.id; }
+
+// GOOD
+function handle(data: unknown): string {
+  if (typeof data === 'object' && data !== null && 'id' in data) {
+    return String((data as Record<string, unknown>).id);
+  }
+  throw new Error('Invalid payload');
+}
+```
+
+## File Naming
+
+| Artifact | Convention | Example |
+|---|---|---|
+| Module/Controller/Service | kebab-case | `bookings.service.ts` |
+| DTO | `create-x.dto.ts`, `x-response.dto.ts` | `create-booking.dto.ts` |
+| Schema | `x.schema.ts` | `booking.schema.ts` |
+| Barrel | `index.ts` | — |
+
+Constants: `SCREAMING_SNAKE_CASE`. No hardcoded secrets or connection strings.
+
+## Scope Lock
+
+- Do not add npm packages without flagging first.
+- Do not change module structure or folder layout without explicit instruction.
+- Do not write feature/business logic when the task is scoped as "setup" or "scaffolding."

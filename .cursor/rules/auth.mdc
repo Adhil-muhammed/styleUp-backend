@@ -1,0 +1,60 @@
+---
+description: Auth rules — OTP-only login, JWT lifecycle, Redis jti blocklist, guard composition, OTP rate limiting.
+globs: src/modules/auth/**
+alwaysApply: false
+---
+
+# Auth Rules
+
+## Flow
+
+OTP-based login only — no passwords. No password reset, no email/password pair.
+
+## Token Lifecycle
+
+| Token | TTL | Notes |
+|---|---|---|
+| Access | 15 min | Short-lived, client memory |
+| Refresh | 7 days | Rotation on every use |
+
+Every JWT includes a `jti` claim (UUID v4). Refresh token is invalidated immediately on use — issue a new pair.
+
+## Redis Blocklist
+
+Revoked tokens stored in Redis keyed by `jti`. TTL = remaining token lifetime — never store longer than the token would have been valid.
+
+```typescript
+// Revoke
+const ttlMs = expiresAt - Date.now();
+await redis.set(`blocklist:${jti}`, '1', 'PX', ttlMs);
+
+// Verify in AuthGuard — reject before any business logic
+const blocked = await redis.exists(`blocklist:${jti}`);
+if (blocked) throw new UnauthorizedException({ code: 'TOKEN_REVOKED' });
+```
+
+## Guards — Compose, Never Inline
+
+Apply guards via `@UseGuards()` decorators. Never write manual JWT or role checks inside controller method bodies.
+
+```typescript
+// BAD — manual role check in controller
+if (req.user.role !== 'provider') throw new ForbiddenException();
+
+// GOOD — composed guard decorators
+@UseGuards(AuthGuard, RolesGuard)
+@Roles('provider')
+@Get('dashboard')
+getDashboard(): Promise<DashboardDto> { ... }
+```
+
+## OTP Rate Limiting
+
+Rate-limit OTP request endpoints per phone number via Redis. Common abuse vector on mobile auth.
+
+```typescript
+const key = `otp_rate:${phoneNumber}`;
+const count = await redis.incr(key);
+if (count === 1) await redis.expire(key, 60); // 60-second window
+if (count > 3) throw new TooManyRequestsException({ code: 'OTP_RATE_LIMIT_EXCEEDED' });
+```

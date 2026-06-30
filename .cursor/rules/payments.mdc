@@ -1,0 +1,52 @@
+---
+description: Razorpay payment rules — UPI Intent only, mandatory webhook verification, state machine, and paise amounts.
+globs: src/modules/payments/**
+alwaysApply: false
+---
+
+# Payments — Razorpay
+
+## UPI Flow
+
+**UPI Intent ONLY.** UPI Collect was deprecated in February 2026. Do not scaffold, reference, or implement it under any circumstance.
+
+## Webhook Signature Verification
+
+Mandatory on every Razorpay webhook handler. Reject before any business logic runs.
+
+```typescript
+import crypto from 'crypto';
+
+function verifyRazorpaySignature(rawBody: Buffer, signature: string, secret: string): boolean {
+  const expected = crypto.createHmac('sha256', secret).update(rawBody).digest('hex');
+  return crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(signature));
+}
+
+// In controller — first line of the handler
+if (!verifyRazorpaySignature(rawBody, sig, this.webhookSecret)) {
+  throw new UnauthorizedException({ code: 'WEBHOOK_SIGNATURE_INVALID' });
+}
+```
+
+## Payment State Machine
+
+Transitions must go through the explicit state machine. Never mutate booking status directly from a webhook.
+
+```
+pending → processing → success
+                     → failed
+```
+
+Do NOT touch state machine logic without explicit sign-off — highest-risk area in the codebase.
+
+## Amounts — Integers (Paise) Only
+
+```typescript
+// BAD — float, precision loss
+amount: 199.99
+
+// GOOD — integer paise
+amountPaise: 19999  // ₹199.99
+```
+
+All payment amounts stored and transmitted as integers (paise). Never floats.
