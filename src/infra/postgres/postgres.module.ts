@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { buildPostgresConnectionOptions } from '@/config/postgres.config';
+import { AuthUserEntity } from '@/infra/persistence/postgres/auth/auth-user.entity';
 
 @Module({
   imports: [
@@ -16,7 +17,7 @@ import { buildPostgresConnectionOptions } from '@/config/postgres.config';
           ...connection,
           synchronize: false,
           logging: configService.get<string>('nodeEnv') !== 'production',
-          entities: [],
+          entities: [AuthUserEntity],
           migrations: [],
         };
       },

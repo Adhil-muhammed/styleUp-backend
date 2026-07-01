@@ -1,0 +1,230 @@
+---
+description: Hexagonal (ports & adapters) layer boundaries, NestJS DI tokens, dual-DB adapter rules, and new-module checklist.
+globs: src/**/*.ts
+alwaysApply: false
+---
+
+# Hexagonal Architecture — StyleUp Backend
+
+Complements [architecture.mdc](architecture.mdc). This rule defines **layer placement**, **port/adapter wiring**, and **violations to flag** — not API envelope or auth details.
+
+## Current Repo State (as of scaffolding)
+
+- `src/modules/` — **planned, not created yet** (auth, users, providers, bookings, payments, notifications)
+- `src/infra/` — connection adapters only: `database/` (Mongoose), `postgres/` (TypeORM), `redis/` (ioredis)
+- **No repository ports or persistence adapters exist yet** — first feature module must establish the pattern below
+- **Established DI token pattern:** `REDIS_CLIENT` Symbol in [redis.module.ts](../../src/infra/redis/redis.module.ts) — reuse this for repository ports
+
+---
+
+## Layer Map (actual folders)
+
+| Layer | Location | May import | Must NOT import |
+|---|---|---|---|
+| **HTTP** | `src/modules/<domain>/*.controller.ts` | service, DTOs, guards/decorators from `common/` | mongoose, typeorm, `@nestjs/mongoose`, `@nestjs/typeorm`, infra adapters, other modules' schemas |
+| **Application** | `src/modules/<domain>/*.service.ts` | port interfaces/tokens, domain types, other modules' **exported services** | `@nestjs/mongoose`, `@nestjs/typeorm`, `mongoose`, `typeorm`, anything under `src/infra/persistence/` |
+| **Ports** | `src/modules/<domain>/ports/*.port.ts` | domain types, plain TS types | `src/infra/**`, mongoose, typeorm |
+| **Domain types** | `src/modules/<domain>/domain/` or `src/shared/types/` | nothing from Nest/ORM | framework packages |
+| **Adapters (Mongo)** | `src/infra/persistence/mongoose/<domain>/` | mongoose, module port interface | application services |
+| **Adapters (Postgres)** | `src/infra/persistence/postgres/<domain>/` | typeorm, module port interface | application services |
+| **Infra bootstrap** | `src/infra/database/`, `postgres/`, `redis/` | framework modules only | feature module code |
+| **Cross-cutting** | `src/common/`, `src/config/`, `src/health/` | infra tokens for ops checks | business logic |
+
+> **Note:** [data-schemas.mdc](data-schemas.mdc) globs `*.schema.ts` at module root. For hex alignment, **new** Mongoose schemas belong in `src/infra/persistence/mongoose/<domain>/` with the adapter — not co-located with the service. Flag if a new schema is added under `src/modules/` without a port/adapter split.
+
+---
+
+## Dependency Flow
+
+```
+Controller → Application Service → Port (interface + token) → Adapter (Mongoose | TypeORM)
+```
+
+- Controllers: validate HTTP input (DTO), call service, map to response DTO — **zero business logic**
+- Services: orchestrate use cases; depend on **port tokens only**
+- Adapters: implement ports; own all ORM/schema/entity code
+
+---
+
+## NestJS Port DI Pattern (required)
+
+Plain TypeScript interfaces **do not exist at runtime**. Every port needs:
+
+1. **Port interface** — `src/modules/<domain>/ports/<domain>.repository.port.ts`
+2. **Injection token** — `Symbol` constant exported alongside the interface
+3. **Adapter class** — implements the interface, lives in `src/infra/persistence/`
+4. **Module registration** — `{ provide: TOKEN, useClass: Adapter }` in the feature module
+
+### Canonical example — established token pattern (Redis)
+
+From [redis.module.ts](../../src/infra/redis/redis.module.ts) + [redis.health.ts](../../src/health/redis.health.ts):
+
+```typescript
+// infra/redis/redis.module.ts
+export const REDIS_CLIENT = Symbol('REDIS_CLIENT');
+
+// health/redis.health.ts
+constructor(@Inject(REDIS_CLIENT) private readonly redis: Redis) {}
+```
+
+### Template for first domain repository (**NEW — copy when scaffolding providers**)
+
+```typescript
+// src/modules/providers/ports/provider.repository.port.ts
+export interface ProviderRepositoryPort {
+  findById(id: string): Promise<Provider | null>;
+}
+
+export const PROVIDER_REPOSITORY = Symbol('PROVIDER_REPOSITORY');
+
+// src/infra/persistence/mongoose/providers/mongoose-provider.repository.ts
+@Injectable()
+export class MongooseProviderRepository implements ProviderRepositoryPort {
+  constructor(@InjectModel(Provider.name) private readonly model: Model<ProviderDocument>) {}
+  async findById(id: string): Promise<Provider | null> { /* map document → domain */ }
+}
+
+// src/modules/providers/providers.module.ts
+@Module({
+  imports: [MongooseModule.forFeature([{ name: Provider.name, schema: ProviderSchema }])],
+  providers: [
+    ProvidersService,
+    { provide: PROVIDER_REPOSITORY, useClass: MongooseProviderRepository },
+  ],
+  exports: [ProvidersService],
+})
+export class ProvidersModule {}
+
+// src/modules/providers/providers.service.ts
+@Injectable()
+export class ProvidersService {
+  constructor(
+    @Inject(PROVIDER_REPOSITORY) private readonly providers: ProviderRepositoryPort,
+  ) {}
+}
+```
+
+For Postgres-backed aggregates, mirror with `TypeOrmProviderRepository` in `src/infra/persistence/postgres/<domain>/` and register the same `PROVIDER_REPOSITORY` token (one adapter per aggregate — do not mix ORMs behind one port unless explicitly designed).
+
+---
+
+## Dual Database Rules
+
+Both ORMs coexist at infra bootstrap level:
+
+| Store | Bootstrap | Adapter home | Use for |
+|---|---|---|---|
+| **MongoDB** | [database.module.ts](../../src/infra/database/database.module.ts) | `src/infra/persistence/mongoose/` | Document/geo-heavy domain (providers, availability) per existing schema rules |
+| **Postgres** | [postgres.module.ts](../../src/infra/postgres/postgres.module.ts) | `src/infra/persistence/postgres/` | Relational/transactional data (new TypeORM entities + migrations in `src/migrations/`) |
+
+- Application services **never** choose Mongo vs Postgres — the module wires one adapter per port
+- Migrations CLI uses [data-source.ts](../../data-source.ts) — adapters must not bypass this for schema changes
+
+---
+
+## Service Import Violation Rule
+
+**If a file under `src/modules/**/` named `*.service.ts` imports any of:**
+
+- `@nestjs/mongoose`, `@nestjs/typeorm`, `mongoose`, `typeorm`
+
+→ **Flag as a hexagonal violation.** Do not silently refactor without user confirmation. Suggest extracting an adapter behind a port.
+
+Controllers with the same imports are also violations (except thin `forFeature` registration stays in `*.module.ts`, never in `*.service.ts`).
+
+---
+
+## Validation Ownership
+
+| Concern | Layer | Mechanism | Example |
+|---|---|---|---|
+| HTTP input shape | Controller boundary | `class-validator` on request DTOs + global `ValidationPipe` | `@IsString()`, `@IsISO8601()` |
+| Authorization | Controller boundary | Guards (`@UseGuards`, `@Roles`) | Never manual JWT checks in controller body |
+| Domain invariants | Application / domain | Service or domain entity method | `endTime > startTime`, slot conflict rules |
+| Persistence constraints | Adapter | Schema indexes, DB constraints | `2dsphere`, unique compound indexes |
+
+DTO validation **≠** business rules. A valid DTO can still be rejected by the service for domain reasons.
+
+---
+
+## Cross-Module Communication
+
+**Established pattern (from [architecture.mdc](architecture.mdc)):** direct **service-to-service** injection — no EventEmitter, no message bus in the codebase today.
+
+```typescript
+// GOOD — BookingsModule imports UsersModule; BookingsService injects UsersService
+// BAD  — BookingsService imports UserModel or IUserRepository from users module
+// BAD  — BookingsController queries another module's collection directly
+```
+
+Rules:
+
+- Import the other module's NestJS module; inject its **exported service**
+- Never import another module's port adapter, schema, entity, or Mongoose model
+- If two modules need each other circularly, extract shared logic to a third module or shared domain service — do not bypass with direct DB access
+- **Do not introduce `@nestjs/event-emitter` or similar without explicit approval** — not in `package.json` today
+
+---
+
+## New Module Checklist
+
+When adding `src/modules/<domain>/`:
+
+- [ ] `<domain>.module.ts` — wires controller, service, port provider(s), ORM `forFeature` imports
+- [ ] `<domain>.controller.ts` — HTTP only; request/response DTOs
+- [ ] `<domain>.service.ts` — use cases; `@Inject(PORT_TOKEN)` only for persistence
+- [ ] `dto/` — `create-*.dto.ts`, `*-response.dto.ts` with `class-validator` + `@ApiProperty`
+- [ ] `ports/<domain>.repository.port.ts` — interface + `Symbol` token (**NEW, required**)
+- [ ] `src/infra/persistence/mongoose/<domain>/` and/or `postgres/<domain>/` — adapter + schema/entity
+- [ ] `index.ts` barrel — export module class only (not adapters)
+- [ ] Unit tests for service — mock port token, not Mongoose/TypeORM
+- [ ] Export **service** from module if other domains need it; never export adapters
+
+---
+
+## Before / After (hypothetical — no feature modules exist yet)
+
+**Violating service (do not write):**
+
+```typescript
+// src/modules/bookings/bookings.service.ts — BAD
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
+import { Booking, BookingDocument } from './booking.schema';
+
+@Injectable()
+export class BookingsService {
+  constructor(@InjectModel(Booking.name) private readonly bookingModel: Model<BookingDocument>) {}
+
+  async create(dto: CreateBookingDto) {
+    if (dto.endTime <= dto.startTime) throw new BadRequestException('Invalid range'); // domain rule mixed with ORM
+    return this.bookingModel.create(dto); // exposes document shape
+  }
+}
+```
+
+**Hex-aligned service:**
+
+```typescript
+// src/modules/bookings/bookings.service.ts — GOOD
+@Injectable()
+export class BookingsService {
+  constructor(
+    @Inject(BOOKING_REPOSITORY) private readonly bookings: BookingRepositoryPort,
+  ) {}
+
+  async create(dto: CreateBookingDto): Promise<Booking> {
+    const booking = Booking.create({ ...dto }); // domain factory enforces end > start
+    return this.bookings.save(booking);
+  }
+}
+```
+
+---
+
+## Relationship to Other Rules
+
+- API envelope, pagination, error codes → [api-conventions.mdc](api-conventions.mdc)
+- Mongoose indexes, soft deletes → [data-schemas.mdc](data-schemas.mdc) (apply inside Mongo adapters)
+- Auth guards, OTP → [auth.mdc](auth.mdc)
+- High-level module isolation → [architecture.mdc](architecture.mdc)
