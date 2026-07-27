@@ -1,5 +1,5 @@
 ---
-description: Auth rules — OTP-only login, JWT lifecycle, Redis jti blocklist, guard composition, OTP rate limiting.
+description: Auth rules — OTP-only login (phone or email), JWT lifecycle, Redis jti blocklist, guard composition, OTP rate limiting.
 globs: src/modules/auth/**
 alwaysApply: false
 ---
@@ -8,53 +8,68 @@ alwaysApply: false
 
 ## Flow
 
-OTP-based login only — no passwords. No password reset, no email/password pair.
+OTP-based login only — no passwords. No password reset endpoints.
+
+User picks **phone (SMS)** or **email**; OTP is sent to that channel.
+
+Login contacts live on `users.email` / `users.phone` (at least one required).
+`customers` is profile/gamification only (no login phone).
+
+Screens: EnterContact → VerifyOTP (+ optional SocialSignIn).
+
+Endpoints:
+
+- `POST /api/mobile/v1/auth/otp/request` — does **not** return `isNewUser` (enumeration-safe)
+- `POST /api/mobile/v1/auth/otp/verify` — returns `isNewUser` only after OTP proof
+- `POST /api/mobile/v1/auth/token/refresh`
+- `POST /api/mobile/v1/auth/logout`
+- `POST /api/mobile/v1/auth/social/{google|apple}` (optional v1)
+
+At verify time, re-lookup the contact in Postgres (do not trust Redis-cached `isNewUser`). Catch unique-constraint races and continue as existing user.
 
 ## Token Lifecycle
 
 | Token | TTL | Notes |
 |---|---|---|
-| Access | 15 min | Short-lived, client memory |
-| Refresh | 7 days | Rotation on every use |
+| Access | 15 min | Short-lived, client memory; `jti` claim |
+| Refresh | 7 days | Stored as SHA-256 hash in `user_sessions`; rotation on use |
 
-Every JWT includes a `jti` claim (UUID v4). Refresh token is invalidated immediately on use — issue a new pair.
+Every access JWT includes a `jti` claim (UUID v4). Refresh token is invalidated immediately on use — issue a new pair.
+
+Refresh tokens are stored as SHA-256 hashes in Postgres `user_sessions.refresh_token` (never plaintext).
+
+Revoked/expired sessions are purged periodically by `UserSessionCleanupService` (native interval, no BullMQ).
 
 ## Redis Blocklist
 
-Revoked tokens stored in Redis keyed by `jti`. TTL = remaining token lifetime — never store longer than the token would have been valid.
+Revoked access tokens stored in Redis keyed by `jti`. TTL = remaining token lifetime — never store longer than the token would have been valid.
 
 ```typescript
-// Revoke
 const ttlMs = expiresAt - Date.now();
 await redis.set(`blocklist:${jti}`, '1', 'PX', ttlMs);
-
-// Verify in AuthGuard — reject before any business logic
-const blocked = await redis.exists(`blocklist:${jti}`);
-if (blocked) throw new UnauthorizedException({ code: 'TOKEN_REVOKED' });
 ```
 
 ## Guards — Compose, Never Inline
 
 Apply guards via `@UseGuards()` decorators. Never write manual JWT or role checks inside controller method bodies.
 
-```typescript
-// BAD — manual role check in controller
-if (req.user.role !== 'provider') throw new ForbiddenException();
-
-// GOOD — composed guard decorators
-@UseGuards(AuthGuard, RolesGuard)
-@Roles('provider')
-@Get('dashboard')
-getDashboard(): Promise<DashboardDto> { ... }
-```
-
 ## OTP Rate Limiting
 
-Rate-limit OTP request endpoints per phone number via Redis. Common abuse vector on mobile auth.
+Rate-limit OTP request/resend on three buckets via Redis:
 
-```typescript
-const key = `otp_rate:${phoneNumber}`;
-const count = await redis.incr(key);
-if (count === 1) await redis.expire(key, 60); // 60-second window
-if (count > 3) throw new TooManyRequestsException({ code: 'OTP_RATE_LIMIT_EXCEEDED' });
-```
+| Bucket | Key | Default |
+|---|---|---|
+| Contact | `otp_rate:contact:{email\|e164}` | 3 / 60s |
+| IP | `otp_rate:ip:{ip}` | 20 / hour (email); **10 / hour for SMS** |
+| Device | `otp_rate:device:{deviceId}` | 20 / hour (when client sends `deviceId`) |
+
+Verify attempts are capped per OTP session (~5); exceeding the cap deletes the session.
+
+OTP session keys: `otp_session:{uuid}` with TTL ≈ 5 minutes. Store OTP hashes only.
+
+## Social linking
+
+1. Resolve by `(provider, provider_id)` first.
+2. Else if provider asserts `emailVerified === true` and email matches an existing user → auto-link identity and login.
+3. Else if email matches but not verified → `SOCIAL_EMAIL_UNVERIFIED`.
+4. Else create a new user.

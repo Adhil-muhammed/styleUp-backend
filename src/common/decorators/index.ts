@@ -1,2 +1,1 @@
-// Custom parameter/method decorators — add as features are implemented
-export {};
+export { CurrentAuth } from './current-auth.decorator';

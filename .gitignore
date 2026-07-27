@@ -2,6 +2,9 @@
 node_modules/
 .pnpm-store/
 
+# Flyway CLI binary cache (downloaded by the flyway wrapper on first run)
+.flyway/
+
 # Build output
 dist/
 *.tsbuildinfo

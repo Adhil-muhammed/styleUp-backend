@@ -37,11 +37,11 @@ See [references/response-dto-example.ts](references/response-dto-example.ts) for
 
 ## Auth
 
-- OTP-based login only — no passwords
-- JWT access (15 min) + refresh (7 days) pair; refresh rotation on use; `jti` claim (UUID v4) on every token
-- Redis blocklist keyed by `jti`, TTL = remaining token lifetime
+- OTP-based login only — no passwords (phone SMS or email channel)
+- Login contacts on `users.email` / `users.phone`; JWT access (15 min) + refresh (7 days); refresh rotation on use; `jti` on every access token
+- Redis: OTP sessions, `otp_rate:{contact}`, and `blocklist:{jti}` (TTL = remaining access lifetime)
 - Guards composed via `@UseGuards(AuthGuard, RolesGuard)` + `@Roles()` — never manual JWT/role checks in controllers
-- Rate-limit OTP request endpoints per phone number via Redis
+- Rate-limit OTP request/resend per normalized email or E.164 phone via Redis
 
 ## Payments (Razorpay)
 

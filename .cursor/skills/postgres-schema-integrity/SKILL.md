@@ -12,14 +12,14 @@ description: >-
 
 Skill teaches. The rule [`.cursor/rules/postgres-schema.mdc`](../../rules/postgres-schema.mdc) enforces a section-level checklist; open the linked reference for row-level detail and examples.
 
-For Postgres **performance** depth, see [supabase-postgres-best-practices](../supabase-postgres-best-practices/SKILL.md). For adapter/layer placement, see [hexagonal-architecture.mdc](../../rules/hexagonal-architecture.mdc). Mongo geo/soft-delete: [data-schemas.mdc](../../rules/data-schemas.mdc) — parallel, not overlapping.
+For Postgres **performance** depth, see [supabase-postgres-best-practices](../supabase-postgres-best-practices/SKILL.md). For adapter/layer placement, see [hexagonal-architecture.mdc](../../rules/hexagonal-architecture.mdc). Mongo geo/soft-delete: [data-schemas.mdc](../../rules/data-schemas.mdc) — parallel, not overlapping. For Flyway naming, versioning, and two-step destructive changes, see [flyway-migrations skill](../../../.claude/skills/flyway-migrations/SKILL.md).
 
 ## Project defaults
 
 - Money: `*_paise` as `integer` — never `numeric` / `float` / `double precision`
 - Tenant key: `shop_id` on multi-tenant tables; consistent per aggregate; flag tenant-scoped tables missing it
 - ORM: TypeORM — `CHECK` / `EXCLUDE` require **raw SQL in migrations**; decorators alone are insufficient
-- Hexagonal: schema/constraint SQL in `src/migrations/` + entity mapping in `src/infra/persistence/postgres/` — **never** domain layer
+- Hexagonal: schema/constraint SQL in `db/migrations/` (Flyway SQL files) + entity mapping in `src/infra/persistence/postgres/` — **never** domain layer
 - Pagination: cursor-based — composite indexes must include the cursor sort column, in sort order
 - DB: PostgreSQL via Supabase
 
@@ -30,6 +30,8 @@ For Postgres **performance** depth, see [supabase-postgres-best-practices](../su
 3. Emit output:
    - **Review/fix of an existing table:** full fix-output format (below).
    - **Net-new schema authoring:** A–H checklist + layer justification only — **skip** the table-diff format.
+
+**External specs are a floor, not a ceiling.** When implementing from a source document (PRD, schema doc, etc.) under an explicit "implement literally, nothing beyond it" instruction, the spec's silence on indexing (C) or concurrency (B) is not an exemption from those sections — it's a scope decision to defer them. State that explicitly, then ship the gap as a named follow-up migration once confirmed, rather than silently skipping A–H.
 
 ### Fix-output format (review/fix only)
 

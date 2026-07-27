@@ -1,2 +1,2 @@
-// Auth, roles, throttle guards — add as features are implemented
-export {};
+export { AuthGuard } from './auth.guard';
+export type { AuthenticatedRequest } from './auth.guard';

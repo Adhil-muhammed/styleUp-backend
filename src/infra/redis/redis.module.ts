@@ -16,7 +16,8 @@ export const REDIS_CLIENT = Symbol('REDIS_CLIENT');
           host: configService.get<string>('redis.host'),
           port: configService.get<number>('redis.port'),
           password: configService.get<string>('redis.password') || undefined,
-          lazyConnect: true,
+          maxRetriesPerRequest: 1,
+          enableReadyCheck: true,
         });
       },
     },

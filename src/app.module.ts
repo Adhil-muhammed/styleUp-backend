@@ -5,7 +5,9 @@ import { LoggerModule } from 'nestjs-pino';
 import configuration from '@/config/configuration';
 import { envValidationSchema } from '@/config/env.validation';
 import { PostgresModule } from '@/infra/postgres/postgres.module';
+import { RedisModule } from '@/infra/redis/redis.module';
 import { HealthModule } from '@/health/health.module';
+import { AuthModule } from '@/modules/auth';
 import { LoggingInterceptor } from '@/common/interceptors/logging.interceptor';
 
 @Module({
@@ -26,6 +28,8 @@ import { LoggingInterceptor } from '@/common/interceptors/logging.interceptor';
       },
     }),
     PostgresModule,
+    RedisModule,
+    AuthModule,
     HealthModule,
   ],
   providers: [

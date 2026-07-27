@@ -30,8 +30,37 @@ export default () => ({
     password: process.env['REDIS_PASSWORD'] || undefined,
   },
   jwt: {
-    secret: process.env['JWT_SECRET'],
-    expiresIn: process.env['JWT_EXPIRES_IN'] ?? '7d',
+    accessSecret: process.env['JWT_ACCESS_SECRET'] ?? process.env['JWT_SECRET'],
+    refreshSecret: process.env['JWT_REFRESH_SECRET'] ?? process.env['JWT_SECRET'],
+    accessExpiresInSeconds: parseInt(process.env['JWT_ACCESS_EXPIRES_IN_SECONDS'] ?? '900', 10),
+    refreshExpiresInSeconds: parseInt(
+      process.env['JWT_REFRESH_EXPIRES_IN_SECONDS'] ?? '604800',
+      10,
+    ),
+  },
+  auth: {
+    otpTtlSeconds: parseInt(process.env['AUTH_OTP_TTL_SECONDS'] ?? '300', 10),
+    otpRateMax: parseInt(process.env['AUTH_OTP_RATE_MAX'] ?? '3', 10),
+    otpRateWindowSeconds: parseInt(process.env['AUTH_OTP_RATE_WINDOW_SECONDS'] ?? '60', 10),
+    otpMaxVerifyAttempts: parseInt(process.env['AUTH_OTP_MAX_VERIFY_ATTEMPTS'] ?? '5', 10),
+    otpIpRateMax: parseInt(process.env['AUTH_OTP_IP_RATE_MAX'] ?? '20', 10),
+    otpIpRateWindowSeconds: parseInt(process.env['AUTH_OTP_IP_RATE_WINDOW_SECONDS'] ?? '3600', 10),
+    otpSmsIpRateMax: parseInt(process.env['AUTH_OTP_SMS_IP_RATE_MAX'] ?? '10', 10),
+    otpSmsIpRateWindowSeconds: parseInt(
+      process.env['AUTH_OTP_SMS_IP_RATE_WINDOW_SECONDS'] ?? '3600',
+      10,
+    ),
+    otpDeviceRateMax: parseInt(process.env['AUTH_OTP_DEVICE_RATE_MAX'] ?? '20', 10),
+    otpDeviceRateWindowSeconds: parseInt(
+      process.env['AUTH_OTP_DEVICE_RATE_WINDOW_SECONDS'] ?? '3600',
+      10,
+    ),
+    sessionRetentionDays: parseInt(process.env['AUTH_SESSION_RETENTION_DAYS'] ?? '7', 10),
+    sessionCleanupIntervalMs: parseInt(
+      process.env['AUTH_SESSION_CLEANUP_INTERVAL_MS'] ?? String(60 * 60 * 1000),
+      10,
+    ),
+    sessionCleanupEnabled: process.env['AUTH_SESSION_CLEANUP_ENABLED'] !== 'false',
   },
   razorpay: {
     keyId: process.env['RAZORPAY_KEY_ID'],

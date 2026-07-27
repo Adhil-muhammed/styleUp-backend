@@ -1,0 +1,79 @@
+---
+description: Flyway SQL migration conventions for StyleUp. Enforces naming, immutability, two-step destructive changes, and FK index requirements on every SQL migration file or Flyway config change.
+globs: db/migrations/**/*.sql,flyway.config.js
+alwaysApply: false
+---
+
+# Flyway Migration Conventions
+
+Full reference: [flyway-migrations skill](../../.claude/skills/flyway-migrations/SKILL.md). This rule is the fast-path checklist — read the skill for annotated examples.
+
+## Runner
+
+`pnpm migrate` is the **only** way to apply migrations. TypeORM `migration:run` has been removed. Never call Flyway inside app startup code.
+
+## Naming — `V<integer>__<snake_case>.sql`
+
+Every file in `db/migrations/` must match this pattern exactly:
+
+```
+V10__add_shop_rating_column.sql   ✓
+V10__AddShopRating.sql            ✗  camelCase in description
+V1740000000000__init.sql          ✗  timestamp as version
+V10.1__patch.sql                  ✗  decimal version
+```
+
+- Version is a plain incrementing integer — no gaps, no decimals, no timestamps
+- Description uses `snake_case`; double underscore (`__`) is the separator
+- `outOfOrder: false` in `flyway.config.js` — Flyway rejects out-of-sequence files
+
+## Immutability
+
+Once a migration file has been applied to **any** environment, its filename and SQL content are permanent. Flyway validates checksums on every `pnpm migrate` run — editing an applied file causes a checksum mismatch error.
+
+**To fix a mistake in an applied migration: write a new `V<n+1>__fix_*.sql`.** Never edit the original.
+
+## Destructive Changes — Always Two Steps
+
+Flyway Community Edition has no rollback. `DROP COLUMN`, `DROP TABLE`, type narrowing, and constraint tightening on populated columns must span two separate releases:
+
+1. **Release N** — add new structure, backfill data, stop writing to old column
+2. **Release N+1** — drop the deprecated column/table after confirming zero usage
+
+Never combine a `DROP` with feature work in the same migration.
+
+## FK Index Requirement
+
+Every `FOREIGN KEY` column must have a `CREATE INDEX` in the **same** migration file, unless a composite index already covers it as the leading column. Flag any FK without a matching index.
+
+```sql
+-- Required pattern
+CONSTRAINT fk_orders_shop FOREIGN KEY (shop_id) REFERENCES shops (id) ON DELETE RESTRICT
+...
+CREATE INDEX idx_orders_shop ON orders (shop_id);   -- must be present
+```
+
+## Authoring Order Within a File
+
+1. `CREATE EXTENSION` / `CREATE TYPE` (if needed)
+2. `CREATE TABLE` (columns → PK → FK constraints → CHECK constraints)
+3. `CREATE INDEX` statements (one per index, after the table)
+4. `ALTER TABLE … ADD CONSTRAINT … EXCLUDE …` (after indexes)
+
+## Money, Timestamps, Status Columns
+
+- Money: `bigint` with `*_paise` suffix — never `numeric` or `float`
+- Timestamps: `timestamptz` only — never bare `timestamp`
+- Status enums: `CONSTRAINT chk_<table>_<col> CHECK (col IN (…))` — no Postgres `ENUM` type
+
+## Verification Checklist (per migration)
+
+- [ ] Version is next integer; no existing file has this version
+- [ ] Filename: `V<n>__<snake_case>.sql`
+- [ ] Every FK column has a `CREATE INDEX` in this file (or composite leading-column justification)
+- [ ] Money columns: `bigint *_paise`
+- [ ] Timestamps: `timestamptz`
+- [ ] Status columns: CHECK constraint with exhaustive list
+- [ ] `ON DELETE` explicit on every `FOREIGN KEY`
+- [ ] Destructive change? Two-step plan spans two version numbers
+- [ ] Runs cleanly: `pnpm migrate` → `pnpm migrate:info` shows Success

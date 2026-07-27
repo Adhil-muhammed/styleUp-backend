@@ -1,6 +1,6 @@
 ---
 description: PostgreSQL/TypeORM schema integrity checklist — FKs, CHECKs, EXCLUDE, money, migrations, indexes. Apply on every Postgres entity/migration change.
-globs: src/infra/persistence/postgres/**/*.ts,src/migrations/**/*.ts,**/*.entity.ts,data-source.ts
+globs: src/infra/persistence/postgres/**/*.ts,db/migrations/**/*.sql,flyway.config.js,**/*.entity.ts,data-source.ts
 alwaysApply: false
 ---
 
@@ -14,11 +14,13 @@ Applies when editing Postgres entities, migrations, or `data-source.ts`. Row-lev
 
 ## Checklist (A–H)
 
+A–H are a floor, not a ceiling: when authoring from an external spec/document that is silent on indexing or concurrency, the spec's columns/tables still get every A–H item applied on top — silence in the source is not an exemption. Ship spec-only first if instructed, then a named follow-up migration for the gaps.
+
 - [ ] **A** Integrity: explicit `ON DELETE`, XOR CHECKs, `_paise` ints, `timestamptz`, status CHECKs, intentional nulls, business UNIQUE
 - [ ] **B** Concurrency: EXCLUDE+partial, `version` on bookings/payments, documented `FOR UPDATE` lock order
 - [ ] **C** Indexes: every FK, cursor sort order, partials for skewed flags; flag N+1 / missing covering indexes
 - [ ] **D** Design: no silent cascade chains; derived cols trigger/generated; JSONB justified; `shop_id` present+indexed
-- [ ] **E** Migrations: expand/backfill/constrain; destructive has rollback; `CONCURRENTLY` on large tables; idempotent; partition candidates
+- [ ] **E** Migrations: expand/backfill/constrain; destructive two-step (Flyway CE has no rollback); `CONCURRENTLY` on large tables; idempotent; partition candidates
 - [ ] **F** Security: RLS by `shop_id`/uid if on; PII flagged; app role no DDL in prod
 - [ ] **G** Naming: `idx_`/`fk_`/`chk_`/`uq_`/`ex_`; snake_case plurals; singular FKs; `*_at` / `*_paise`
 - [ ] **H** Layer: classify every finding with the Layer Decision Rule below
@@ -36,7 +38,9 @@ Applies when editing Postgres entities, migrations, or `data-source.ts`. Row-lev
 
 ## Hex reminder
 
-Constraints/migrations → `src/migrations/`. Entity mapping → `src/infra/persistence/postgres/`. Never domain layer.
+Constraints/migrations → `db/migrations/` (Flyway SQL). Entity mapping → `src/infra/persistence/postgres/`. Never domain layer.
+
+See also: [flyway-migrations skill](../../.claude/skills/flyway-migrations/SKILL.md) for naming, versioning, and two-step destructive changes.
 
 ## Verification add-ons
 

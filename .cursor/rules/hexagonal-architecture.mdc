@@ -115,7 +115,7 @@ Both ORMs coexist at infra bootstrap level:
 | Store | Bootstrap | Adapter home | Use for |
 |---|---|---|---|
 | **MongoDB** | [database.module.ts](../../src/infra/database/database.module.ts) | `src/infra/persistence/mongoose/` | Document/geo-heavy domain (providers, availability) per existing schema rules |
-| **Postgres** | [postgres.module.ts](../../src/infra/postgres/postgres.module.ts) | `src/infra/persistence/postgres/` | Relational/transactional data (new TypeORM entities + migrations in `src/migrations/`) |
+| **Postgres** | [postgres.module.ts](../../src/infra/postgres/postgres.module.ts) | `src/infra/persistence/postgres/` | Relational/transactional data (TypeORM entities + Flyway SQL in `db/migrations/`) |
 
 - Application services **never** choose Mongo vs Postgres — the module wires one adapter per port
 - Migrations CLI uses [data-source.ts](../../data-source.ts) — adapters must not bypass this for schema changes

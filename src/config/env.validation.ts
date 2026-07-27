@@ -34,8 +34,29 @@ export const envValidationSchema = Joi.object({
   REDIS_HOST: Joi.string().optional(),
   REDIS_PORT: Joi.number().optional(),
   REDIS_PASSWORD: Joi.string().allow('').optional(),
-  JWT_SECRET: Joi.string().required(),
-  JWT_EXPIRES_IN: Joi.string().default('7d'),
+  JWT_SECRET: Joi.string().optional(),
+  JWT_ACCESS_SECRET: Joi.string().optional(),
+  JWT_REFRESH_SECRET: Joi.string().optional(),
+  JWT_ACCESS_EXPIRES_IN_SECONDS: Joi.number().default(900),
+  JWT_REFRESH_EXPIRES_IN_SECONDS: Joi.number().default(604800),
+  JWT_EXPIRES_IN: Joi.string().optional(),
+  AUTH_OTP_TTL_SECONDS: Joi.number().default(300),
+  AUTH_OTP_RATE_MAX: Joi.number().default(3),
+  AUTH_OTP_RATE_WINDOW_SECONDS: Joi.number().default(60),
+  AUTH_OTP_MAX_VERIFY_ATTEMPTS: Joi.number().default(5),
+  AUTH_OTP_IP_RATE_MAX: Joi.number().default(20),
+  AUTH_OTP_IP_RATE_WINDOW_SECONDS: Joi.number().default(3600),
+  AUTH_OTP_SMS_IP_RATE_MAX: Joi.number().default(10),
+  AUTH_OTP_SMS_IP_RATE_WINDOW_SECONDS: Joi.number().default(3600),
+  AUTH_OTP_DEVICE_RATE_MAX: Joi.number().default(20),
+  AUTH_OTP_DEVICE_RATE_WINDOW_SECONDS: Joi.number().default(3600),
+  AUTH_SESSION_RETENTION_DAYS: Joi.number().default(7),
+  AUTH_SESSION_CLEANUP_INTERVAL_MS: Joi.number().default(3600000),
+  AUTH_SESSION_CLEANUP_ENABLED: Joi.boolean().default(true),
   RAZORPAY_KEY_ID: Joi.string().allow('').optional(),
   RAZORPAY_KEY_SECRET: Joi.string().allow('').optional(),
-});
+})
+  .or('JWT_SECRET', 'JWT_ACCESS_SECRET')
+  .messages({
+    'object.missing': 'JWT_ACCESS_SECRET or JWT_SECRET is required',
+  });

@@ -1,2 +1,2 @@
-// Shared domain interfaces and utility types — add as features are implemented
-export {};
+export type { User, AuthTokenPair } from '@/modules/auth/domain/types';
+export type { GeoJsonPoint } from './geo-json-point';
