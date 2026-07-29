@@ -11,3 +11,14 @@ export type {
   SalonSearchFilters,
   PaginatedSalons,
 } from './discovery';
+export type {
+  ShopProfileGender,
+  ShopSpecialist,
+  WorkingHoursRow,
+  ShopServiceCategorySummary,
+  ShopPackageCard,
+  ShopProfile,
+  ShopPackageDetail,
+  ServiceVariant,
+  ApprovedShopCore,
+} from './shop-profile';

@@ -24,6 +24,9 @@ export class ShopGalleryEntity {
   @Column({ name: 'alt_text', type: 'varchar', length: 256, nullable: true })
   altText!: string | null;
 
+  @Column({ name: 'sort_order', type: 'int', default: 0 })
+  sortOrder!: number;
+
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt!: Date;
 

@@ -59,6 +59,9 @@ export class ShopEntity {
   @Column({ name: 'cover_image_url', type: 'varchar', length: 512, nullable: true })
   coverImageUrl!: string | null;
 
+  @Column({ name: 'about', type: 'text', nullable: true })
+  about!: string | null;
+
   @Column({ name: 'service_radius_meters', type: 'int', nullable: true })
   serviceRadiusMeters!: number | null;
 

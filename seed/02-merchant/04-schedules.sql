@@ -1,0 +1,193 @@
+-- @rows 13
+-- Meera's Cuts: Mon–Sat shop hours + Rahul staff pattern; Sunday shop closed.
+-- Skip staff_break — would overlap staff_recurring_pattern and trip ex_schedules_no_overlap.
+-- Shop: 275fc283-baf6-47df-93bc-970c61b0e465
+-- Staff: dd92d1c8-f3b3-4d97-bca9-47c875a88c43
+
+INSERT INTO schedules (
+  id,
+  shop_id,
+  staff_id,
+  schedule_type,
+  day_of_week,
+  start_time,
+  end_time,
+  is_closed,
+  label,
+  effective_from,
+  effective_to
+)
+VALUES
+  -- Shop operating hours Mon–Sat 09:00–20:00
+  (
+    'a1000001-0001-4000-8000-000000000001',
+    '275fc283-baf6-47df-93bc-970c61b0e465',
+    NULL,
+    'shop_operating_hours',
+    1,
+    '09:00',
+    '20:00',
+    FALSE,
+    'Open',
+    '2026-01-01',
+    NULL
+  ),
+  (
+    'a1000001-0001-4000-8000-000000000002',
+    '275fc283-baf6-47df-93bc-970c61b0e465',
+    NULL,
+    'shop_operating_hours',
+    2,
+    '09:00',
+    '20:00',
+    FALSE,
+    'Open',
+    '2026-01-01',
+    NULL
+  ),
+  (
+    'a1000001-0001-4000-8000-000000000003',
+    '275fc283-baf6-47df-93bc-970c61b0e465',
+    NULL,
+    'shop_operating_hours',
+    3,
+    '09:00',
+    '20:00',
+    FALSE,
+    'Open',
+    '2026-01-01',
+    NULL
+  ),
+  (
+    'a1000001-0001-4000-8000-000000000004',
+    '275fc283-baf6-47df-93bc-970c61b0e465',
+    NULL,
+    'shop_operating_hours',
+    4,
+    '09:00',
+    '20:00',
+    FALSE,
+    'Open',
+    '2026-01-01',
+    NULL
+  ),
+  (
+    'a1000001-0001-4000-8000-000000000005',
+    '275fc283-baf6-47df-93bc-970c61b0e465',
+    NULL,
+    'shop_operating_hours',
+    5,
+    '09:00',
+    '20:00',
+    FALSE,
+    'Open',
+    '2026-01-01',
+    NULL
+  ),
+  (
+    'a1000001-0001-4000-8000-000000000006',
+    '275fc283-baf6-47df-93bc-970c61b0e465',
+    NULL,
+    'shop_operating_hours',
+    6,
+    '09:00',
+    '20:00',
+    FALSE,
+    'Open',
+    '2026-01-01',
+    NULL
+  ),
+  -- Sunday closed
+  (
+    'a1000001-0001-4000-8000-000000000007',
+    '275fc283-baf6-47df-93bc-970c61b0e465',
+    NULL,
+    'shop_operating_hours',
+    7,
+    NULL,
+    NULL,
+    TRUE,
+    'Closed',
+    '2026-01-01',
+    NULL
+  ),
+  -- Rahul staff pattern Mon–Sat 09:00–18:00
+  (
+    'a1000002-0002-4000-8000-000000000001',
+    '275fc283-baf6-47df-93bc-970c61b0e465',
+    'dd92d1c8-f3b3-4d97-bca9-47c875a88c43',
+    'staff_recurring_pattern',
+    1,
+    '09:00',
+    '18:00',
+    FALSE,
+    'Rahul shift',
+    '2026-01-01',
+    NULL
+  ),
+  (
+    'a1000002-0002-4000-8000-000000000002',
+    '275fc283-baf6-47df-93bc-970c61b0e465',
+    'dd92d1c8-f3b3-4d97-bca9-47c875a88c43',
+    'staff_recurring_pattern',
+    2,
+    '09:00',
+    '18:00',
+    FALSE,
+    'Rahul shift',
+    '2026-01-01',
+    NULL
+  ),
+  (
+    'a1000002-0002-4000-8000-000000000003',
+    '275fc283-baf6-47df-93bc-970c61b0e465',
+    'dd92d1c8-f3b3-4d97-bca9-47c875a88c43',
+    'staff_recurring_pattern',
+    3,
+    '09:00',
+    '18:00',
+    FALSE,
+    'Rahul shift',
+    '2026-01-01',
+    NULL
+  ),
+  (
+    'a1000002-0002-4000-8000-000000000004',
+    '275fc283-baf6-47df-93bc-970c61b0e465',
+    'dd92d1c8-f3b3-4d97-bca9-47c875a88c43',
+    'staff_recurring_pattern',
+    4,
+    '09:00',
+    '18:00',
+    FALSE,
+    'Rahul shift',
+    '2026-01-01',
+    NULL
+  ),
+  (
+    'a1000002-0002-4000-8000-000000000005',
+    '275fc283-baf6-47df-93bc-970c61b0e465',
+    'dd92d1c8-f3b3-4d97-bca9-47c875a88c43',
+    'staff_recurring_pattern',
+    5,
+    '09:00',
+    '18:00',
+    FALSE,
+    'Rahul shift',
+    '2026-01-01',
+    NULL
+  ),
+  (
+    'a1000002-0002-4000-8000-000000000006',
+    '275fc283-baf6-47df-93bc-970c61b0e465',
+    'dd92d1c8-f3b3-4d97-bca9-47c875a88c43',
+    'staff_recurring_pattern',
+    6,
+    '09:00',
+    '18:00',
+    FALSE,
+    'Rahul shift',
+    '2026-01-01',
+    NULL
+  )
+ON CONFLICT (id) DO NOTHING;

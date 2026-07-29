@@ -11,6 +11,7 @@ import { HealthModule } from '@/health/health.module';
 import { AuthModule } from '@/modules/auth';
 import { DiscoveryModule } from '@/modules/discovery';
 import { RatingModule } from '@/modules/rating/rating.module';
+import { ShopsModule } from '@/modules/shops';
 import { LoggingInterceptor } from '@/common/interceptors/logging.interceptor';
 
 @Module({
@@ -49,6 +50,7 @@ import { LoggingInterceptor } from '@/common/interceptors/logging.interceptor';
     RedisModule,
     AuthModule,
     DiscoveryModule,
+    ShopsModule,
     RatingModule,
     HealthModule,
   ],

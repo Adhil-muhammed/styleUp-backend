@@ -21,8 +21,17 @@ export class PackageEntity {
   @Column({ name: 'name', type: 'varchar', length: 128 })
   name!: string;
 
+  @Column({ name: 'subtitle', type: 'varchar', length: 256, nullable: true })
+  subtitle!: string | null;
+
   @Column({ name: 'description', type: 'text', nullable: true })
   description!: string | null;
+
+  @Column({ name: 'image_url', type: 'varchar', length: 512, nullable: true })
+  imageUrl!: string | null;
+
+  @Column({ name: 'detail_image_url', type: 'varchar', length: 512, nullable: true })
+  detailImageUrl!: string | null;
 
   /** bigint is returned as a string by the postgres driver. */
   @Column({ name: 'price_paise', type: 'bigint' })

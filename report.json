@@ -997,6 +997,30 @@
       "operation": "migrate",
       "exception": null,
       "licenseFailed": false
+    },
+    {
+      "initialSchemaVersion": "11",
+      "targetSchemaVersion": "12",
+      "schemaName": "",
+      "migrations": [
+        {
+          "category": "Versioned",
+          "version": "12",
+          "description": "shop profile columns",
+          "type": "SQL",
+          "filepath": "/home/adhil/styleUp-backend/db/migrations/V12__shop_profile_columns.sql",
+          "executionTime": 2360
+        }
+      ],
+      "migrationsExecuted": 1,
+      "success": true,
+      "flywayVersion": "9.22.3",
+      "database": "postgres",
+      "warnings": [],
+      "timestamp": "2026-07-30T01:11:39.401365596",
+      "operation": "migrate",
+      "exception": null,
+      "licenseFailed": false
     }
   ]
 }
