@@ -973,6 +973,30 @@
       "operation": "info",
       "exception": null,
       "licenseFailed": false
+    },
+    {
+      "initialSchemaVersion": "10",
+      "targetSchemaVersion": "11",
+      "schemaName": "",
+      "migrations": [
+        {
+          "category": "Versioned",
+          "version": "11",
+          "description": "add discovery columns",
+          "type": "SQL",
+          "filepath": "/home/adhil/styleUp-backend/db/migrations/V11__add_discovery_columns.sql",
+          "executionTime": 3078
+        }
+      ],
+      "migrationsExecuted": 1,
+      "success": true,
+      "flywayVersion": "9.22.3",
+      "database": "postgres",
+      "warnings": [],
+      "timestamp": "2026-07-29T15:34:58.754717828",
+      "operation": "migrate",
+      "exception": null,
+      "licenseFailed": false
     }
   ]
 }

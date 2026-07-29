@@ -51,8 +51,8 @@ export interface CategorySalonsData extends PaginatedSalons {
 @Injectable()
 export class DiscoveryService {
   private static readonly DEFAULT_CURRENCY = 'INR';
-  private static readonly NEAREST_LIMIT = 10;
   private static readonly POPULAR_LIMIT = 10;
+  private static readonly NEAREST_LIMIT = 10;
   private static readonly DEFAULT_MAP_RADIUS_KM = 10;
 
   constructor(
