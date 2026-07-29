@@ -25,6 +25,7 @@ import { RedisOtpStore } from '@/infra/persistence/redis/redis-otp.store';
 import { JwtTokenService } from '@/infra/auth/jwt-token.service';
 import { ConsoleSmsSender } from '@/infra/auth/console-sms.sender';
 import { ConsoleEmailSender } from '@/infra/auth/console-email.sender';
+import { NodemailerEmailSender } from '@/infra/auth/nodemailer-email.sender';
 import { StubSocialTokenVerifier } from '@/infra/auth/stub-social-token.verifier';
 import { AuthGuard } from '@/common/guards/auth.guard';
 import { RedisModule } from '@/infra/redis/redis.module';
@@ -55,12 +56,26 @@ import { UserSessionCleanupService } from '@/modules/auth/user-session-cleanup.s
     AuthService,
     AuthGuard,
     UserSessionCleanupService,
+    ConsoleEmailSender,
+    NodemailerEmailSender,
     { provide: USER_REPOSITORY, useClass: TypeOrmUserRepository },
     { provide: SESSION_REPOSITORY, useClass: TypeOrmSessionRepository },
     { provide: OTP_STORE, useClass: RedisOtpStore },
     { provide: TOKEN_SERVICE, useClass: JwtTokenService },
     { provide: SMS_SENDER, useClass: ConsoleSmsSender },
-    { provide: EMAIL_SENDER, useClass: ConsoleEmailSender },
+    {
+      provide: EMAIL_SENDER,
+      inject: [ConfigService, ConsoleEmailSender, NodemailerEmailSender],
+      useFactory: (
+        config: ConfigService,
+        consoleEmailSender: ConsoleEmailSender,
+        nodemailerEmailSender: NodemailerEmailSender,
+      ) => {
+        const smtpUser = config.get<string>('smtp.user');
+        const smtpAppPassword = config.get<string>('smtp.appPassword');
+        return smtpUser && smtpAppPassword ? nodemailerEmailSender : consoleEmailSender;
+      },
+    },
     { provide: SOCIAL_TOKEN_VERIFIER, useClass: StubSocialTokenVerifier },
   ],
   exports: [AuthService, TOKEN_SERVICE, AuthGuard],

@@ -1,0 +1,104 @@
+---
+description: BullMQ queue conventions for async job processing in this NestJS backend
+globs: src/modules/rating/**/*.ts,src/**/rating*.ts,src/**/*queue*.ts,src/**/*producer*.ts,src/**/*processor*.ts
+alwaysApply: false
+---
+
+# BullMQ Queue Conventions
+
+## Module structure
+
+Every async queue lives in `src/modules/<domain>/`:
+
+```
+src/modules/<domain>/
+  <domain>.constants.ts   ← queue name constant + JobData interface
+  <domain>-producer.service.ts
+  <domain>.processor.ts
+  <domain>.module.ts
+```
+
+## Queue name constant
+
+Always export the queue name from constants to avoid string duplication:
+
+```typescript
+// rating.constants.ts
+export const SHOP_RATING_QUEUE = 'shop-rating';
+
+export interface ShopRatingJobData {
+  shopId: string;
+}
+```
+
+## Producer
+
+- Inject with `@InjectQueue(QUEUE_NAME)`.
+- Pass `jobId` equal to the entity's primary key to deduplicate burst events.
+- Always set `removeOnComplete: true` and `removeOnFail: N` (keep last N failed jobs).
+- Always set `attempts` + `backoff` for retry resilience.
+
+```typescript
+await this.queue.add('recompute', data, {
+  jobId: shopId,          // deduplication key
+  removeOnComplete: true,
+  removeOnFail: 5,
+  attempts: 3,
+  backoff: { type: 'exponential', delay: 2000 },
+});
+```
+
+## Processor
+
+- Extend `WorkerHost` and annotate with `@Processor(QUEUE_NAME)`.
+- Use raw SQL (`manager.query`) for aggregate queries — avoid loading full entity graphs.
+- Log result with `Logger` at `log` level (not `debug`) so it's visible in production.
+
+```typescript
+@Processor(SHOP_RATING_QUEUE)
+export class RatingProcessor extends WorkerHost {
+  async process(job: Job<ShopRatingJobData>): Promise<void> { ... }
+}
+```
+
+## Module wiring
+
+```typescript
+@Module({
+  imports: [
+    BullModule.registerQueue({ name: SHOP_RATING_QUEUE }),
+    TypeOrmModule.forFeature([ShopEntity]),
+  ],
+  providers: [RatingProducerService, RatingProcessor],
+  exports: [RatingProducerService],   // export producer for injection into other modules
+})
+export class RatingModule {}
+```
+
+## AppModule (global connection — done once)
+
+```typescript
+BullModule.forRootAsync({
+  inject: [ConfigService],
+  useFactory: (config: ConfigService) => {
+    const url = config.get<string>('redis.url');
+    return url
+      ? { connection: { url } }
+      : { connection: { host: ..., port: ..., password: ... } };
+  },
+}),
+```
+
+## Calling the producer
+
+Import `RatingModule` in the consumer module, then inject `RatingProducerService`:
+
+```typescript
+// reviews.service.ts
+constructor(private readonly ratingProducer: RatingProducerService) {}
+
+async createReview(...) {
+  // ... save review ...
+  await this.ratingProducer.enqueueShopRatingRecompute(booking.shopId);
+}
+```

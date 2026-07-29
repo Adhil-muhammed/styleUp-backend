@@ -25,9 +25,15 @@ export default () => ({
     uri: process.env['MONGODB_URI'],
   },
   redis: {
+    url: process.env['REDIS_URL'] || undefined,
     host: process.env['REDIS_HOST'] ?? 'localhost',
     port: parseInt(process.env['REDIS_PORT'] ?? '6379', 10),
     password: process.env['REDIS_PASSWORD'] || undefined,
+  },
+  smtp: {
+    user: process.env['SMTP_USER'] || undefined,
+    appPassword: process.env['SMTP_APP_PASSWORD'] || undefined,
+    from: process.env['SMTP_FROM'] || undefined,
   },
   jwt: {
     accessSecret: process.env['JWT_ACCESS_SECRET'] ?? process.env['JWT_SECRET'],
@@ -55,6 +61,7 @@ export default () => ({
       process.env['AUTH_OTP_DEVICE_RATE_WINDOW_SECONDS'] ?? '3600',
       10,
     ),
+    otpTestCode: process.env['AUTH_OTP_TEST_CODE'] || undefined,
     sessionRetentionDays: parseInt(process.env['AUTH_SESSION_RETENTION_DAYS'] ?? '7', 10),
     sessionCleanupIntervalMs: parseInt(
       process.env['AUTH_SESSION_CLEANUP_INTERVAL_MS'] ?? String(60 * 60 * 1000),

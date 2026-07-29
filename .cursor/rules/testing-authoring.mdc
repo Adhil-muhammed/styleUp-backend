@@ -1,0 +1,29 @@
+---
+description: Repo-specific conventions for authoring Jest unit and e2e tests
+globs:
+  - src/**/*.ts
+  - test/**/*.ts
+alwaysApply: false
+---
+
+# Testing Authoring Rules (StyleUp)
+
+## Test placement
+- Unit tests live alongside code under `src/` as `*.spec.ts` when practical.
+- E2E tests live under `test/` as `*.e2e-spec.ts`.
+
+## Unit test quality
+- Test the **service-layer business logic** (not adapter wiring).
+- Mock **port tokens** (e.g. `USER_REPOSITORY`, `OTP_STORE`, `TOKEN_SERVICE`), not ORM/Mongoose/Redis clients directly.
+- Avoid low-value tests that only restate implementation (assert observable behavior and error codes).
+
+## E2E test quality
+- Use `supertest` with the Nest HTTP server and validate the mobile API envelope (`success`, `data`, `error.code`, `error.message`).
+- Prefer the shared e2e helpers in `test/helpers` over ad-hoc setup/teardown.
+
+## Never skip silently
+- If verification cannot run (missing Docker, failed migrations, connectivity), your response must state:
+  - which command failed
+  - what it failed to connect to
+  - the next action required (e.g. run `pnpm run test:e2e:prep` again)
+

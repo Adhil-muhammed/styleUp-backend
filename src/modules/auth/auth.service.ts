@@ -66,6 +66,7 @@ export class AuthService {
   private readonly otpSmsIpRateWindowSeconds: number;
   private readonly otpDeviceRateMax: number;
   private readonly otpDeviceRateWindowSeconds: number;
+  private readonly otpTestCode?: string;
   private readonly refreshExpiresInSeconds: number;
 
   constructor(
@@ -90,6 +91,7 @@ export class AuthService {
     this.otpDeviceRateMax = this.config.get<number>('auth.otpDeviceRateMax') ?? 20;
     this.otpDeviceRateWindowSeconds =
       this.config.get<number>('auth.otpDeviceRateWindowSeconds') ?? 3600;
+    this.otpTestCode = this.config.get<string>('auth.otpTestCode');
     this.refreshExpiresInSeconds = this.config.get<number>('jwt.refreshExpiresInSeconds') ?? 604800;
   }
 
@@ -491,6 +493,9 @@ export class AuthService {
   }
 
   private generateOtp(): string {
+    if (this.config.get<string>('nodeEnv') === 'test' && this.otpTestCode) {
+      return this.otpTestCode;
+    }
     return String(randomInt(0, 1_000_000)).padStart(6, '0');
   }
 

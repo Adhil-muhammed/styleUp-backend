@@ -29,6 +29,12 @@ export class CatalogServiceEntity {
   @Column({ name: 'description', type: 'text', nullable: true })
   description!: string | null;
 
+  @Column({ name: 'image_url', type: 'varchar', length: 512, nullable: true })
+  imageUrl!: string | null;
+
+  @Column({ name: 'badge', type: 'varchar', length: 64, nullable: true })
+  badge!: string | null;
+
   @Column({ name: 'is_active', type: 'boolean', default: true })
   isActive!: boolean;
 

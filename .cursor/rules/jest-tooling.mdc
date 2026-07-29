@@ -1,0 +1,26 @@
+---
+description: Jest tooling conventions for this repo
+globs:
+  - package.json
+  - jest.config.ts
+  - test/**/*.json
+alwaysApply: false
+---
+
+# Jest Tooling Rules (StyleUp)
+
+## Scripts contract (do not rename without coordination)
+- `pnpm test` runs unit tests (use `jest.config.ts`).
+- `pnpm run test:e2e:prep` starts local dependencies and runs Flyway migrations.
+- `pnpm run test:e2e` runs e2e with `NODE_ENV=test`.
+- `pnpm run test:e2e:down` stops local e2e dependencies.
+
+## Config separation
+- Keep unit Jest config in `jest.config.ts`.
+- Keep e2e Jest config in `test/jest-e2e.json`.
+- Keep e2e setup explicit via `setupFiles` in `test/jest-e2e.json` (no hidden runtime hacks).
+
+## Coverage hygiene
+- Avoid letting bootstrap/config-only files dominate coverage metrics.
+- When adjusting coverage, prefer adding exclusions for `src/main.ts`, `src/**/index.ts`, and other wiring-only modules.
+

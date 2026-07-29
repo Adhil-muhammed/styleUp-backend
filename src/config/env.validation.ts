@@ -31,9 +31,15 @@ export const envValidationSchema = Joi.object({
   MONGODB_URI: Joi.string().optional(),
   MONGO_PORT: Joi.number().default(27017),
   MONGO_DB: Joi.string().default('styleup'),
+  REDIS_URL: Joi.string()
+    .uri({ scheme: ['redis', 'rediss'] })
+    .optional(),
   REDIS_HOST: Joi.string().optional(),
   REDIS_PORT: Joi.number().optional(),
   REDIS_PASSWORD: Joi.string().allow('').optional(),
+  SMTP_USER: Joi.string().email().optional(),
+  SMTP_APP_PASSWORD: Joi.string().allow('').optional(),
+  SMTP_FROM: Joi.string().optional(),
   JWT_SECRET: Joi.string().optional(),
   JWT_ACCESS_SECRET: Joi.string().optional(),
   JWT_REFRESH_SECRET: Joi.string().optional(),
@@ -50,6 +56,9 @@ export const envValidationSchema = Joi.object({
   AUTH_OTP_SMS_IP_RATE_WINDOW_SECONDS: Joi.number().default(3600),
   AUTH_OTP_DEVICE_RATE_MAX: Joi.number().default(20),
   AUTH_OTP_DEVICE_RATE_WINDOW_SECONDS: Joi.number().default(3600),
+  AUTH_OTP_TEST_CODE: Joi.string()
+    .pattern(/^\d{6}$/)
+    .optional(),
   AUTH_SESSION_RETENTION_DAYS: Joi.number().default(7),
   AUTH_SESSION_CLEANUP_INTERVAL_MS: Joi.number().default(3600000),
   AUTH_SESSION_CLEANUP_ENABLED: Joi.boolean().default(true),

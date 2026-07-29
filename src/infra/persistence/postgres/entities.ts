@@ -7,6 +7,7 @@ import { UserIdentityEntity } from '@/infra/persistence/postgres/auth/user-ident
 import { UserRoleEntity } from '@/infra/persistence/postgres/auth/user-role.entity';
 import { UserSessionEntity } from '@/infra/persistence/postgres/auth/user-session.entity';
 import { ShopEntity } from '@/infra/persistence/postgres/merchant/shop.entity';
+import { HomeBannerEntity } from '@/infra/persistence/postgres/merchant/home-banner.entity';
 import { ShopGalleryEntity } from '@/infra/persistence/postgres/merchant/shop-gallery.entity';
 import { StaffEntity } from '@/infra/persistence/postgres/merchant/staff.entity';
 import { CatalogServiceEntity } from '@/infra/persistence/postgres/catalog/catalog-service.entity';
@@ -34,6 +35,7 @@ export const POSTGRES_ENTITIES = [
   UserRoleEntity,
   CustomerEntity,
   ShopEntity,
+  HomeBannerEntity,
   ShopGalleryEntity,
   StaffEntity,
   ServiceCategoryEntity,

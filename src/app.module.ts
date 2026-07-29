@@ -1,13 +1,16 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { LoggerModule } from 'nestjs-pino';
+import { BullModule } from '@nestjs/bullmq';
 import configuration from '@/config/configuration';
 import { envValidationSchema } from '@/config/env.validation';
 import { PostgresModule } from '@/infra/postgres/postgres.module';
 import { RedisModule } from '@/infra/redis/redis.module';
 import { HealthModule } from '@/health/health.module';
 import { AuthModule } from '@/modules/auth';
+import { DiscoveryModule } from '@/modules/discovery';
+import { RatingModule } from '@/modules/rating/rating.module';
 import { LoggingInterceptor } from '@/common/interceptors/logging.interceptor';
 
 @Module({
@@ -27,9 +30,26 @@ import { LoggingInterceptor } from '@/common/interceptors/logging.interceptor';
         level: process.env['NODE_ENV'] !== 'production' ? 'debug' : 'info',
       },
     }),
+    BullModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => {
+        const url = config.get<string>('redis.url');
+        return url
+          ? { connection: { url } }
+          : {
+              connection: {
+                host: config.get<string>('redis.host'),
+                port: config.get<number>('redis.port'),
+                password: config.get<string>('redis.password') || undefined,
+              },
+            };
+      },
+    }),
     PostgresModule,
     RedisModule,
     AuthModule,
+    DiscoveryModule,
+    RatingModule,
     HealthModule,
   ],
   providers: [

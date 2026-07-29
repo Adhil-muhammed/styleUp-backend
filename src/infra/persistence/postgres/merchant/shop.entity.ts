@@ -56,6 +56,20 @@ export class ShopEntity {
   @Column({ name: 'is_featured', type: 'boolean', default: false })
   isFeatured!: boolean;
 
+  @Column({ name: 'cover_image_url', type: 'varchar', length: 512, nullable: true })
+  coverImageUrl!: string | null;
+
+  @Column({ name: 'service_radius_meters', type: 'int', nullable: true })
+  serviceRadiusMeters!: number | null;
+
+  /** Denormalized average rating — updated asynchronously by RatingProcessor (BullMQ). */
+  @Column({ name: 'avg_rating', type: 'numeric', precision: 3, scale: 2, default: 0 })
+  avgRating!: string;
+
+  /** Denormalized review count — updated asynchronously by RatingProcessor (BullMQ). */
+  @Column({ name: 'review_count', type: 'int', default: 0 })
+  reviewCount!: number;
+
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt!: Date;
 

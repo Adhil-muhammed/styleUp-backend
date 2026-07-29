@@ -36,6 +36,9 @@ export class StaffEntity {
   @Column({ name: 'bio', type: 'text', nullable: true })
   bio!: string | null;
 
+  @Column({ name: 'avatar_url', type: 'varchar', length: 512, nullable: true })
+  avatarUrl!: string | null;
+
   @Column({
     name: 'availability_status',
     type: 'varchar',
