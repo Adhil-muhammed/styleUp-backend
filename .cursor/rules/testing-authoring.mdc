@@ -8,22 +8,41 @@ alwaysApply: false
 
 # Testing Authoring Rules (StyleUp)
 
+## Required on feature work
+
+When adding or changing a **service**, **controller**, or other non-trivial domain logic:
+
+1. Create or update colocated unit tests as `*.spec.ts` next to the source file.
+2. Cover at minimum:
+   - **Service**: happy paths + documented error codes (e.g. `SHOP_NOT_FOUND`, `CATEGORY_NOT_FOUND`)
+   - **Controller**: request mapping defaults + errors thrown in the controller (e.g. `MISSING_GEO`)
+3. Mock hexagonal **port tokens**, not TypeORM/Mongoose/Redis clients.
+4. Run `pnpm test` and fix failures before claiming the feature done.
+
+Reference patterns:
+- `src/modules/auth/auth.service.spec.ts`
+- `src/modules/discovery/discovery.service.spec.ts`
+- `src/modules/discovery/discovery.controller.spec.ts`
+
 ## Test placement
-- Unit tests live alongside code under `src/` as `*.spec.ts` when practical.
+
+- Unit tests live alongside code under `src/` as `*.spec.ts`.
 - E2E tests live under `test/` as `*.e2e-spec.ts`.
 
 ## Unit test quality
+
 - Test the **service-layer business logic** (not adapter wiring).
-- Mock **port tokens** (e.g. `USER_REPOSITORY`, `OTP_STORE`, `TOKEN_SERVICE`), not ORM/Mongoose/Redis clients directly.
+- Mock **port tokens** (e.g. `USER_REPOSITORY`, `OTP_STORE`, `TOKEN_SERVICE`, `DISCOVERY_REPOSITORY`), not ORM/Mongoose/Redis clients directly.
 - Avoid low-value tests that only restate implementation (assert observable behavior and error codes).
 
 ## E2E test quality
+
 - Use `supertest` with the Nest HTTP server and validate the mobile API envelope (`success`, `data`, `error.code`, `error.message`).
 - Prefer the shared e2e helpers in `test/helpers` over ad-hoc setup/teardown.
 
 ## Never skip silently
+
 - If verification cannot run (missing Docker, failed migrations, connectivity), your response must state:
   - which command failed
   - what it failed to connect to
   - the next action required (e.g. run `pnpm run test:e2e:prep` again)
-

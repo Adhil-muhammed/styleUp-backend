@@ -1,16 +1,26 @@
 ---
 name: testing-workflow
-description: Guidance for writing, running, and debugging Jest unit and e2e tests in this NestJS backend. Use when the user asks for test setup, test-writing conventions, or when Jest/e2e behavior needs troubleshooting.
+description: Guidance for writing, running, and debugging Jest unit and e2e tests in this NestJS backend. Use when implementing a feature, adding a new controller or service, finishing a module, or when the user asks for test setup, test-writing conventions, or Jest/e2e troubleshooting.
 ---
 
 # Testing Workflow (StyleUp Backend)
 
 This skill standardizes how tests are authored and verified in this repository.
 
+## Mandatory gate (feature work)
+
+When implementing or changing a service, controller, or other important domain logic:
+
+1. Write or update colocated unit tests (`*.spec.ts`) for the changed service/controller.
+2. Run `pnpm test` until green.
+3. Only then mark the feature complete.
+
+Do not claim a feature done without passing unit tests.
+
 ## Quick Start
 
 1. Decide **unit vs e2e**:
-   - **Unit**: service-layer business logic; mock port tokens (never DB/Redis clients directly).
+   - **Unit**: service/controller business logic; mock port tokens (never DB/Redis clients directly).
    - **E2E**: controller → service → adapters with real HTTP + real dependencies via `docker-compose` + Flyway.
 2. Write the test following the patterns below.
 3. Run verification in order (fastest first):
@@ -21,8 +31,8 @@ This skill standardizes how tests are authored and verified in this repository.
 ## Making the Unit/E2E Decision
 
 Use **unit tests** when:
-- The change affects core domain/service behavior (OTP rate limiting, token revocation logic, conflict handling, etc.).
-- You can model the dependency boundaries with the existing ports in `src/modules/auth/ports`.
+- Adding or changing a service, controller, or core domain behavior.
+- You can model dependencies with existing hexagonal ports (e.g. `src/modules/*/ports`).
 
 Use **e2e tests** when:
 - You need to validate the full HTTP request/response envelope and the wiring between modules/adapters.
@@ -34,13 +44,14 @@ Use both when:
 ## Unit Test Pattern (Mock Hexagonal Ports)
 
 1. Create a Nest testing module with `@nestjs/testing`.
-2. Provide the service under test (e.g. `AuthService`).
+2. Provide the service under test (e.g. `AuthService`, `DiscoveryService`).
 3. Provide **mock implementations for port tokens** only.
 4. Do not import TypeORM/Mongoose models directly in unit tests.
 
 Repo references:
-- Service-layer unit tests: `src/modules/auth/auth.service.spec.ts`
-- Port-token interfaces and tokens: `src/modules/auth/ports/*`
+- Auth service unit tests: `src/modules/auth/auth.service.spec.ts`
+- Discovery service + controller unit tests: `src/modules/discovery/discovery.service.spec.ts`, `src/modules/discovery/discovery.controller.spec.ts`
+- Port-token interfaces and tokens: `src/modules/*/ports/*`
 - Typed factories for readable tests: `test/factories/auth-test-factories.ts`
 
 ## E2E Pattern (Real HTTP + Real Local Stack)
@@ -50,7 +61,7 @@ Repo references:
 2. Run e2e:
    - `pnpm run test:e2e`
 3. Use supertest against the Nest app:
-   - Tests should call endpoints under the global prefix `/api/v1/...`.
+   - Tests should call endpoints under the global prefix `/api/v1/...` or mobile paths as defined by the controller.
 
 Repo references:
 - E2E app bootstrap: `test/helpers/create-test-app.ts` (mirrors `src/main.ts`)
@@ -71,9 +82,8 @@ If a task requires external services and they are not available:
 
 ## Verification Checklist
 
-When you finish adding/changing tests, ensure:
+When you finish adding/changing tests or feature code, ensure:
 - `pnpm test` passes for unit tests
 - `pnpm run test:e2e:prep` succeeds (if e2e was changed)
 - `pnpm run test:e2e` passes (if e2e was changed)
 - Lint/build remain clean if you touched configuration
-

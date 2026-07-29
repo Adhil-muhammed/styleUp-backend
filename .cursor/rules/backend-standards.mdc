@@ -72,7 +72,8 @@ This is the single source of truth for all StyleUp backend work.
 
 ## Testing
 
-- Unit tests are required for service-layer business logic.
+- Unit tests are required for new or changed **services and controllers** (colocated `*.spec.ts`).
+- Run `pnpm test` and fix failures before marking feature work complete.
 - Minimum coverage focus: payment state transitions and booking conflict checks.
 - E2E test for the full booking flow is required before the bookings module is considered done.
 - Never skip tests silently. If a task would require skipping tests, flag it explicitly.
