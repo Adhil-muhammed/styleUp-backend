@@ -1,6 +1,10 @@
 ---
 name: testing-workflow
-description: Guidance for writing, running, and debugging Jest unit and e2e tests in this NestJS backend. Use when implementing a feature, adding a new controller or service, finishing a module, or when the user asks for test setup, test-writing conventions, or Jest/e2e troubleshooting.
+description: >-
+  Guidance for writing, running, and verifying Jest unit tests in this NestJS
+  backend. Use when implementing a feature, adding a controller or service, or
+  finishing a module. For e2e decisions, prep/run, and pitfalls, use the
+  e2e-testing skill.
 ---
 
 # Testing Workflow (StyleUp Backend)
@@ -13,33 +17,19 @@ When implementing or changing a service, controller, or other important domain l
 
 1. Write or update colocated unit tests (`*.spec.ts`) for the changed service/controller.
 2. Run `pnpm test` until green.
-3. Only then mark the feature complete.
+3. If e2e is relevant → follow the **e2e-testing** skill (decision table + prep/run + pitfalls); gate is in `.cursor/rules/e2e-testing.mdc`.
+4. Only then mark the feature complete.
 
-Do not claim a feature done without passing unit tests.
+Do not claim a feature done without passing unit tests (and e2e when required).
 
 ## Quick Start
 
-1. Decide **unit vs e2e**:
-   - **Unit**: service/controller business logic; mock port tokens (never DB/Redis clients directly).
-   - **E2E**: controller → service → adapters with real HTTP + real dependencies via `docker-compose` + Flyway.
-2. Write the test following the patterns below.
-3. Run verification in order (fastest first):
+1. Decide **unit vs e2e** — for e2e required/not, use the **e2e-testing** skill decision table (canonical). Unit: service/controller logic with mocked port tokens.
+2. Write the tests.
+3. Verify (fastest first):
    - `pnpm test` (unit)
-   - `pnpm run test:e2e:prep` then `pnpm run test:e2e` (e2e)
-   - `pnpm run build` and `pnpm run lint` if you made configuration changes
-
-## Making the Unit/E2E Decision
-
-Use **unit tests** when:
-- Adding or changing a service, controller, or core domain behavior.
-- You can model dependencies with existing hexagonal ports (e.g. `src/modules/*/ports`).
-
-Use **e2e tests** when:
-- You need to validate the full HTTP request/response envelope and the wiring between modules/adapters.
-- You need confidence that migrations + real DB/Redis + controller DTO validation behave correctly together.
-
-Use both when:
-- The unit test proves the logic, and the e2e test proves the integration.
+   - `pnpm run test:e2e:prep` then `pnpm run test:e2e` (when e2e-relevant)
+   - `pnpm run build` / `pnpm run lint` if you touched configuration
 
 ## Unit Test Pattern (Mock Hexagonal Ports)
 
@@ -54,36 +44,20 @@ Repo references:
 - Port-token interfaces and tokens: `src/modules/*/ports/*`
 - Typed factories for readable tests: `test/factories/auth-test-factories.ts`
 
-## E2E Pattern (Real HTTP + Real Local Stack)
+## E2E
 
-1. Start dependencies and run migrations:
-   - `pnpm run test:e2e:prep`
-2. Run e2e:
-   - `pnpm run test:e2e`
-3. Use supertest against the Nest app:
-   - Tests should call endpoints under the global prefix `/api/v1/...` or mobile paths as defined by the controller.
-
-Repo references:
-- E2E app bootstrap: `test/helpers/create-test-app.ts` (mirrors `src/main.ts`)
-- E2E helpers:
-  - `test/helpers/postgres-test-utils.ts` (truncate between tests)
-  - `test/helpers/redis-test-utils.ts` (flush Redis between tests)
-- Example e2e suite: `test/auth.e2e-spec.ts`
-
-Deterministic OTP for e2e:
-- OTP codes are normally random and hashed in Redis.
-- For repeatable e2e, the repo uses a test-only env override `AUTH_OTP_TEST_CODE` gated behind `NODE_ENV=test`.
+Do not duplicate e2e criteria or pitfalls here. Use the **e2e-testing** skill for prep/run, helpers, suite inventory, and failure triage. Live examples: `test/app.e2e-spec.ts`, `test/bookings-concurrency.e2e-spec.ts`.
 
 ## Failure Handling (Be Explicit)
 
-If a task requires external services and they are not available:
+If verification cannot run (missing Docker, failed migrations, connectivity):
 - Do not silently skip the e2e work.
-- Report which stage failed (`test:e2e:prep` vs `test:e2e`) and what command/output is needed to fix it.
+- Report which stage failed (`test:e2e:prep` vs `test:e2e`) and what is needed to fix it.
+- For known local-stack symptoms, see e2e-testing skill pitfalls.
 
 ## Verification Checklist
 
 When you finish adding/changing tests or feature code, ensure:
 - `pnpm test` passes for unit tests
-- `pnpm run test:e2e:prep` succeeds (if e2e was changed)
-- `pnpm run test:e2e` passes (if e2e was changed)
+- `pnpm run test:e2e:prep` + `pnpm run test:e2e` pass when e2e was required or changed
 - Lint/build remain clean if you touched configuration

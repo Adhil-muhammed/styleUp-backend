@@ -2,7 +2,11 @@ import { INestApplication } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { assertTestEnv } from './assert-test-env';
 
-const EXCLUDED_TABLES = ['flyway_schema_history'];
+const EXCLUDED_TABLES = [
+  'flyway_schema_history',
+  'roles', // Flyway-seeded system roles (e.g. customer) required by signup
+  'spatial_ref_sys', // PostGIS catalog — not app data
+];
 
 export async function truncatePostgres(app: INestApplication): Promise<void> {
   assertTestEnv();

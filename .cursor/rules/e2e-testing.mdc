@@ -1,0 +1,42 @@
+---
+description: E2E gate — when feature work must add e2e tests; skip policy. Pitfalls live in the e2e-testing skill.
+globs:
+  - test/**/*.e2e-spec.ts
+  - test/helpers/**/*.ts
+  - src/modules/**/*.ts
+alwaysApply: false
+---
+
+# E2E Testing Rules (StyleUp)
+
+## Feature gate
+
+Any feature implementation where e2e is relevant → create or update the e2e test case also (`test/*.e2e-spec.ts`). Do not ship HTTP/integration behavior covered only by unit mocks when e2e applies.
+
+## When e2e is required
+
+- New or changed public HTTP endpoints / API contracts
+- Auth, payment, or booking flows (session, OTP, pay, slot booking)
+- Migration-backed DB constraints that protect concurrency or integrity (EXCLUDE, uniqueness)
+- Multi-adapter wiring that unit port mocks cannot prove
+
+## When e2e is not required
+
+- Pure refactors with no behavior change
+- Internal helpers fully covered by unit tests
+- Scaffolding-only / setup tasks with no feature logic
+
+## Skip policy
+
+- Do not add new `describe.skip` / `it.skip` for unfinished e2e without explicit user approval.
+- Existing skips must keep a `TODO` comment stating why and when to re-enable.
+
+## Authoring baseline
+
+- Bootstrap with `test/helpers/create-test-app.ts`; close the app in `afterAll`.
+- Assert the mobile API envelope (`success`, `data`, `error.code`, `error.message`).
+- Prefer `truncatePostgres` / `clearRedis` over ad-hoc cleanup.
+
+Pitfalls and local-stack failure triage → see the **e2e-testing** skill (do not duplicate here).
+
+When changing “when to write e2e,” update this rule’s lists and the skill decision table together.

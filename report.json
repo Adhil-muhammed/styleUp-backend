@@ -1021,6 +1021,452 @@
       "operation": "migrate",
       "exception": null,
       "licenseFailed": false
+    },
+    {
+      "initialSchemaVersion": "12",
+      "targetSchemaVersion": "14",
+      "schemaName": "",
+      "migrations": [
+        {
+          "category": "Versioned",
+          "version": "13",
+          "description": "booking payment columns",
+          "type": "SQL",
+          "filepath": "/home/adhil/styleUp-backend/db/migrations/V13__booking_payment_columns.sql",
+          "executionTime": 1567
+        },
+        {
+          "category": "Versioned",
+          "version": "14",
+          "description": "booking items exclude overlap",
+          "type": "SQL",
+          "filepath": "/home/adhil/styleUp-backend/db/migrations/V14__booking_items_exclude_overlap.sql",
+          "executionTime": 1042
+        }
+      ],
+      "migrationsExecuted": 2,
+      "success": true,
+      "flywayVersion": "9.22.3",
+      "database": "postgres",
+      "warnings": [],
+      "timestamp": "2026-07-31T00:25:10.029790846",
+      "operation": "migrate",
+      "exception": null,
+      "licenseFailed": false
+    },
+    {
+      "initialSchemaVersion": "14",
+      "targetSchemaVersion": null,
+      "schemaName": "",
+      "migrations": [],
+      "migrationsExecuted": 0,
+      "success": true,
+      "flywayVersion": "9.22.3",
+      "database": "postgres",
+      "warnings": [],
+      "timestamp": "2026-08-03T18:21:37.017157689",
+      "operation": "migrate",
+      "exception": null,
+      "licenseFailed": false
+    },
+    {
+      "initialSchemaVersion": null,
+      "targetSchemaVersion": null,
+      "schemaName": "",
+      "migrations": [
+        {
+          "category": "Versioned",
+          "version": "1",
+          "description": "create auth users table",
+          "type": "SQL",
+          "filepath": "/home/adhil/styleUp-backend/db/migrations/V1__create_auth_users_table.sql",
+          "executionTime": 29
+        },
+        {
+          "category": "Versioned",
+          "version": "2",
+          "description": "drop auth users scaffold",
+          "type": "SQL",
+          "filepath": "/home/adhil/styleUp-backend/db/migrations/V2__drop_auth_users_scaffold.sql",
+          "executionTime": 14
+        }
+      ],
+      "migrationsExecuted": 2,
+      "success": false,
+      "flywayVersion": "9.22.3",
+      "database": "styleup_test",
+      "warnings": [],
+      "timestamp": "2026-08-03T18:30:45.341598700",
+      "operation": "migrate",
+      "exception": "Migration V3__enable_schema_extensions.sql failed\n-------------------------------------------------\nSQL State  : 0A000\nError Code : 0\nMessage    : ERROR: extension \"postgis\" is not available\n  Detail: Could not open extension control file \"/usr/local/share/postgresql/extension/postgis.control\": No such file or directory.\n  Hint: The extension must first be installed on the system where PostgreSQL is running.\nLocation   : db/migrations/V3__enable_schema_extensions.sql (/home/adhil/styleUp-backend/db/migrations/V3__enable_schema_extensions.sql)\nLine       : 6\nStatement  : -- V3: Enable PostGIS (shops.location geography column) and btree_gist\n--     (uuid/integer equality inside GiST exclusion constraints on schedules).\n--     Also declares the custom `timerange` range type required for the scheduling\n--     EXCLUDE constraint in V7.\n\nCREATE EXTENSION IF NOT EXISTS postgis\n",
+      "licenseFailed": false
+    },
+    {
+      "initialSchemaVersion": null,
+      "targetSchemaVersion": "14",
+      "schemaName": "",
+      "migrations": [
+        {
+          "category": "Versioned",
+          "version": "1",
+          "description": "create auth users table",
+          "type": "SQL",
+          "filepath": "/home/adhil/styleUp-backend/db/migrations/V1__create_auth_users_table.sql",
+          "executionTime": 32
+        },
+        {
+          "category": "Versioned",
+          "version": "2",
+          "description": "drop auth users scaffold",
+          "type": "SQL",
+          "filepath": "/home/adhil/styleUp-backend/db/migrations/V2__drop_auth_users_scaffold.sql",
+          "executionTime": 17
+        },
+        {
+          "category": "Versioned",
+          "version": "3",
+          "description": "enable schema extensions",
+          "type": "SQL",
+          "filepath": "/home/adhil/styleUp-backend/db/migrations/V3__enable_schema_extensions.sql",
+          "executionTime": 128
+        },
+        {
+          "category": "Versioned",
+          "version": "4",
+          "description": "create identity tables",
+          "type": "SQL",
+          "filepath": "/home/adhil/styleUp-backend/db/migrations/V4__create_identity_tables.sql",
+          "executionTime": 96
+        },
+        {
+          "category": "Versioned",
+          "version": "5",
+          "description": "create merchant tables",
+          "type": "SQL",
+          "filepath": "/home/adhil/styleUp-backend/db/migrations/V5__create_merchant_tables.sql",
+          "executionTime": 86
+        },
+        {
+          "category": "Versioned",
+          "version": "6",
+          "description": "create catalog tables",
+          "type": "SQL",
+          "filepath": "/home/adhil/styleUp-backend/db/migrations/V6__create_catalog_tables.sql",
+          "executionTime": 77
+        },
+        {
+          "category": "Versioned",
+          "version": "7",
+          "description": "create scheduling tables",
+          "type": "SQL",
+          "filepath": "/home/adhil/styleUp-backend/db/migrations/V7__create_scheduling_tables.sql",
+          "executionTime": 49
+        },
+        {
+          "category": "Versioned",
+          "version": "8",
+          "description": "create transaction tables",
+          "type": "SQL",
+          "filepath": "/home/adhil/styleUp-backend/db/migrations/V8__create_transaction_tables.sql",
+          "executionTime": 142
+        },
+        {
+          "category": "Versioned",
+          "version": "9",
+          "description": "add missing fk indexes and version columns",
+          "type": "SQL",
+          "filepath": "/home/adhil/styleUp-backend/db/migrations/V9__add_missing_fk_indexes_and_version_columns.sql",
+          "executionTime": 10
+        },
+        {
+          "category": "Versioned",
+          "version": "10",
+          "description": "move login contacts to users",
+          "type": "SQL",
+          "filepath": "/home/adhil/styleUp-backend/db/migrations/V10__move_login_contacts_to_users.sql",
+          "executionTime": 35
+        },
+        {
+          "category": "Versioned",
+          "version": "11",
+          "description": "add discovery columns",
+          "type": "SQL",
+          "filepath": "/home/adhil/styleUp-backend/db/migrations/V11__add_discovery_columns.sql",
+          "executionTime": 40
+        },
+        {
+          "category": "Versioned",
+          "version": "12",
+          "description": "shop profile columns",
+          "type": "SQL",
+          "filepath": "/home/adhil/styleUp-backend/db/migrations/V12__shop_profile_columns.sql",
+          "executionTime": 15
+        },
+        {
+          "category": "Versioned",
+          "version": "13",
+          "description": "booking payment columns",
+          "type": "SQL",
+          "filepath": "/home/adhil/styleUp-backend/db/migrations/V13__booking_payment_columns.sql",
+          "executionTime": 27
+        },
+        {
+          "category": "Versioned",
+          "version": "14",
+          "description": "booking items exclude overlap",
+          "type": "SQL",
+          "filepath": "/home/adhil/styleUp-backend/db/migrations/V14__booking_items_exclude_overlap.sql",
+          "executionTime": 6
+        }
+      ],
+      "migrationsExecuted": 14,
+      "success": true,
+      "flywayVersion": "9.22.3",
+      "database": "styleup_test",
+      "warnings": [],
+      "timestamp": "2026-08-03T18:32:03.427538590",
+      "operation": "migrate",
+      "exception": null,
+      "licenseFailed": false
+    },
+    {
+      "schemaVersion": "14",
+      "schemaName": "",
+      "migrations": [
+        {
+          "category": "Versioned",
+          "version": "1",
+          "rawVersion": "1",
+          "description": "create auth users table",
+          "type": "SQL",
+          "installedOnUTC": "2026-08-03T13:02:03.723697Z",
+          "state": "Success",
+          "undoable": "No",
+          "filepath": "/home/adhil/styleUp-backend/db/migrations/V1__create_auth_users_table.sql",
+          "undoFilepath": "",
+          "installedBy": "styleup_test",
+          "executionTime": 32
+        },
+        {
+          "category": "Versioned",
+          "version": "2",
+          "rawVersion": "2",
+          "description": "drop auth users scaffold",
+          "type": "SQL",
+          "installedOnUTC": "2026-08-03T13:02:03.796773Z",
+          "state": "Success",
+          "undoable": "No",
+          "filepath": "/home/adhil/styleUp-backend/db/migrations/V2__drop_auth_users_scaffold.sql",
+          "undoFilepath": "",
+          "installedBy": "styleup_test",
+          "executionTime": 17
+        },
+        {
+          "category": "Versioned",
+          "version": "3",
+          "rawVersion": "3",
+          "description": "enable schema extensions",
+          "type": "SQL",
+          "installedOnUTC": "2026-08-03T13:02:03.843433Z",
+          "state": "Success",
+          "undoable": "No",
+          "filepath": "/home/adhil/styleUp-backend/db/migrations/V3__enable_schema_extensions.sql",
+          "undoFilepath": "",
+          "installedBy": "styleup_test",
+          "executionTime": 128
+        },
+        {
+          "category": "Versioned",
+          "version": "4",
+          "rawVersion": "4",
+          "description": "create identity tables",
+          "type": "SQL",
+          "installedOnUTC": "2026-08-03T13:02:03.989469Z",
+          "state": "Success",
+          "undoable": "No",
+          "filepath": "/home/adhil/styleUp-backend/db/migrations/V4__create_identity_tables.sql",
+          "undoFilepath": "",
+          "installedBy": "styleup_test",
+          "executionTime": 96
+        },
+        {
+          "category": "Versioned",
+          "version": "5",
+          "rawVersion": "5",
+          "description": "create merchant tables",
+          "type": "SQL",
+          "installedOnUTC": "2026-08-03T13:02:04.116744Z",
+          "state": "Success",
+          "undoable": "No",
+          "filepath": "/home/adhil/styleUp-backend/db/migrations/V5__create_merchant_tables.sql",
+          "undoFilepath": "",
+          "installedBy": "styleup_test",
+          "executionTime": 86
+        },
+        {
+          "category": "Versioned",
+          "version": "6",
+          "rawVersion": "6",
+          "description": "create catalog tables",
+          "type": "SQL",
+          "installedOnUTC": "2026-08-03T13:02:04.219561Z",
+          "state": "Success",
+          "undoable": "No",
+          "filepath": "/home/adhil/styleUp-backend/db/migrations/V6__create_catalog_tables.sql",
+          "undoFilepath": "",
+          "installedBy": "styleup_test",
+          "executionTime": 77
+        },
+        {
+          "category": "Versioned",
+          "version": "7",
+          "rawVersion": "7",
+          "description": "create scheduling tables",
+          "type": "SQL",
+          "installedOnUTC": "2026-08-03T13:02:04.312030Z",
+          "state": "Success",
+          "undoable": "No",
+          "filepath": "/home/adhil/styleUp-backend/db/migrations/V7__create_scheduling_tables.sql",
+          "undoFilepath": "",
+          "installedBy": "styleup_test",
+          "executionTime": 49
+        },
+        {
+          "category": "Versioned",
+          "version": "8",
+          "rawVersion": "8",
+          "description": "create transaction tables",
+          "type": "SQL",
+          "installedOnUTC": "2026-08-03T13:02:04.380750Z",
+          "state": "Success",
+          "undoable": "No",
+          "filepath": "/home/adhil/styleUp-backend/db/migrations/V8__create_transaction_tables.sql",
+          "undoFilepath": "",
+          "installedBy": "styleup_test",
+          "executionTime": 142
+        },
+        {
+          "category": "Versioned",
+          "version": "9",
+          "rawVersion": "9",
+          "description": "add missing fk indexes and version columns",
+          "type": "SQL",
+          "installedOnUTC": "2026-08-03T13:02:04.566724Z",
+          "state": "Success",
+          "undoable": "No",
+          "filepath": "/home/adhil/styleUp-backend/db/migrations/V9__add_missing_fk_indexes_and_version_columns.sql",
+          "undoFilepath": "",
+          "installedBy": "styleup_test",
+          "executionTime": 10
+        },
+        {
+          "category": "Versioned",
+          "version": "10",
+          "rawVersion": "10",
+          "description": "move login contacts to users",
+          "type": "SQL",
+          "installedOnUTC": "2026-08-03T13:02:04.588260Z",
+          "state": "Success",
+          "undoable": "No",
+          "filepath": "/home/adhil/styleUp-backend/db/migrations/V10__move_login_contacts_to_users.sql",
+          "undoFilepath": "",
+          "installedBy": "styleup_test",
+          "executionTime": 35
+        },
+        {
+          "category": "Versioned",
+          "version": "11",
+          "rawVersion": "11",
+          "description": "add discovery columns",
+          "type": "SQL",
+          "installedOnUTC": "2026-08-03T13:02:04.643902Z",
+          "state": "Success",
+          "undoable": "No",
+          "filepath": "/home/adhil/styleUp-backend/db/migrations/V11__add_discovery_columns.sql",
+          "undoFilepath": "",
+          "installedBy": "styleup_test",
+          "executionTime": 40
+        },
+        {
+          "category": "Versioned",
+          "version": "12",
+          "rawVersion": "12",
+          "description": "shop profile columns",
+          "type": "SQL",
+          "installedOnUTC": "2026-08-03T13:02:04.696071Z",
+          "state": "Success",
+          "undoable": "No",
+          "filepath": "/home/adhil/styleUp-backend/db/migrations/V12__shop_profile_columns.sql",
+          "undoFilepath": "",
+          "installedBy": "styleup_test",
+          "executionTime": 15
+        },
+        {
+          "category": "Versioned",
+          "version": "13",
+          "rawVersion": "13",
+          "description": "booking payment columns",
+          "type": "SQL",
+          "installedOnUTC": "2026-08-03T13:02:04.725072Z",
+          "state": "Success",
+          "undoable": "No",
+          "filepath": "/home/adhil/styleUp-backend/db/migrations/V13__booking_payment_columns.sql",
+          "undoFilepath": "",
+          "installedBy": "styleup_test",
+          "executionTime": 27
+        },
+        {
+          "category": "Versioned",
+          "version": "14",
+          "rawVersion": "14",
+          "description": "booking items exclude overlap",
+          "type": "SQL",
+          "installedOnUTC": "2026-08-03T13:02:04.762086Z",
+          "state": "Success",
+          "undoable": "No",
+          "filepath": "/home/adhil/styleUp-backend/db/migrations/V14__booking_items_exclude_overlap.sql",
+          "undoFilepath": "",
+          "installedBy": "styleup_test",
+          "executionTime": 6
+        }
+      ],
+      "flywayVersion": "9.22.3",
+      "database": "styleup_test",
+      "allSchemasEmpty": false,
+      "timestamp": "2026-08-03T18:32:08.490709059",
+      "operation": "info",
+      "exception": null,
+      "licenseFailed": false
+    },
+    {
+      "initialSchemaVersion": "14",
+      "targetSchemaVersion": null,
+      "schemaName": "",
+      "migrations": [],
+      "migrationsExecuted": 0,
+      "success": true,
+      "flywayVersion": "9.22.3",
+      "database": "styleup_test",
+      "warnings": [],
+      "timestamp": "2026-08-03T18:33:29.754758513",
+      "operation": "migrate",
+      "exception": null,
+      "licenseFailed": false
+    },
+    {
+      "initialSchemaVersion": "14",
+      "targetSchemaVersion": null,
+      "schemaName": "",
+      "migrations": [],
+      "migrationsExecuted": 0,
+      "success": true,
+      "flywayVersion": "9.22.3",
+      "database": "postgres",
+      "warnings": [],
+      "timestamp": "2026-08-03T23:12:51.853476711",
+      "operation": "migrate",
+      "exception": null,
+      "licenseFailed": false
     }
   ]
 }

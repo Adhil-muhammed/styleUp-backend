@@ -1,0 +1,151 @@
+---
+description: Repo navigation index — consult before searching; maps tasks to folders/files
+alwaysApply: true
+---
+
+# StyleUp Backend — Repo Map
+
+Single NestJS 10 API (hexagonal). Postgres (TypeORM + Flyway) + Redis (OTP/sessions + BullMQ). Not a monorepo.
+
+## Search strategy
+
+1. Use this map (and Quick lookup) to pick the folder/file.
+2. Open those paths first.
+3. Grep/search the wider repo **only** if this map does not cover the task.
+4. Prefer existing rules/skills under `.cursor/` for how-to; this file is **where**.
+
+## Quick lookup
+
+| If the task involves... | Look first in... |
+|---|---|
+| App bootstrap / module wiring | `src/main.ts`, `src/app.module.ts` |
+| Adding/changing an API route | `src/modules/<domain>/*.controller.ts`, `dto/` |
+| Business / domain logic | `src/modules/<domain>/*.service.ts`, `domain/`, `ports/` |
+| Persistence adapters (Postgres) | `src/infra/persistence/postgres/<domain>/` |
+| Persistence adapters (Redis) | `src/infra/persistence/redis/` |
+| Auth adapters (JWT, email/SMS) | `src/infra/auth/` |
+| DB schema / migrations | `db/migrations/V*.sql`, Flyway: `flyway.config.js` |
+| Seed / demo data | `seed/`, `seed/seeder.js` (`pnpm seed`) |
+| Shared types / DTOs (cross-module) | `src/shared/types/` |
+| Guards, filters, interceptors | `src/common/` |
+| Env / config validation | `src/config/`, `.env.example`, `.env.test` |
+| Health checks | `src/health/` |
+| BullMQ queue / job | `src/modules/rating/` (+ `.cursor/skills/bullmq-queue-authoring`) |
+| Unit tests | colocated `*.spec.ts` under `src/` |
+| E2E tests / helpers | `test/*.e2e-spec.ts`, `test/helpers/` |
+| Docker / local Postgres+Redis | `docker-compose.yml`, `Dockerfile` |
+| Agent rules / skills | `.cursor/rules/`, `.cursor/skills/`, `.claude/skills/` |
+
+## Top-level layout
+
+| Path | Responsibility | Check first |
+|---|---|---|
+| `src/` | Application source | `main.ts`, `app.module.ts`, `modules/`, `infra/` |
+| `db/migrations/` | Flyway SQL schema versions | next `V<n>__*.sql` |
+| `seed/` | Idempotent SQL seeds | `seeder.js`, `01-auth/` … `04-transactions/` |
+| `test/` | E2E Jest suites + helpers | `*.e2e-spec.ts`, `helpers/`, `jest-e2e.json` |
+| `docker-compose.yml` | Local PostGIS + Redis (+ app) | postgres `env_file: .env.test` |
+| `flyway.config.js` | Migration runner config | `DATABASE_URL` / `POSTGRES_*` |
+| `data-source.ts` | TypeORM CLI data source | rarely; schema via Flyway |
+| `package.json` | Scripts (`test`, `test:e2e*`, `migrate`, `seed`) | scripts block |
+| `.cursor/` | Project rules + skills | `rules/`, `skills/` |
+| `.claude/skills/` | Claude-oriented skills (Flyway, Nest standards) | mirror of some `.cursor` guidance |
+| `.agents/` | Agent tooling metadata | usually ignore for product work |
+| `README.md` | Human overview | — |
+| `.env` / `.env.test` / `.env.example` | Runtime / test / template env | never commit secrets |
+| `dist/` | Build output | ignore |
+| `node_modules/` | Dependencies | ignore |
+| `.flyway/` | Flyway CLI cache | ignore |
+| `.pnpm-store/` | Local pnpm store | ignore |
+| `report.html` / `report.json` | Flyway run reports | ignore |
+| `.github/` | CI workflows | **absent** today |
+
+## Feature modules (`src/modules/`)
+
+Pattern: `*.module.ts` · `*.controller.ts` · `*.service.ts` · `dto/` · `ports/` · colocated `*.spec.ts`.
+
+| Module | Path | Responsibility | Key files |
+|---|---|---|---|
+| auth | `src/modules/auth/` | OTP login, tokens, sessions, social | `auth.controller.ts`, `auth.service.ts`, `ports/`, `domain/` |
+| bookings | `src/modules/bookings/` | Availability, quote, create/pay booking | `bookings.controller.ts`, `bookings.service.ts`, `ports/` |
+| discovery | `src/modules/discovery/` | Home, map, search, categories | `discovery.controller.ts`, `discovery.service.ts`, `ports/` |
+| shops | `src/modules/shops/` | Shop profile, packages, specialists | `shops.controller.ts`, `shops.service.ts`, `ports/` |
+| rating | `src/modules/rating/` | BullMQ rating recompute queue | `rating.processor.ts`, `rating-producer.service.ts`, `rating.constants.ts` |
+| notifications | `src/modules/notifications/` | Placeholder (empty) | — |
+| payments | `src/modules/payments/` | Placeholder (empty); pay flow is under bookings | — |
+| providers | `src/modules/providers/` | Placeholder (empty) | — |
+| services | `src/modules/services/` | Placeholder (empty) | — |
+| users | `src/modules/users/` | Placeholder (empty); users live in auth/postgres | — |
+
+## Infra / data layer (`src/infra/`)
+
+| Path | Responsibility | Key files |
+|---|---|---|
+| `infra/postgres/` | TypeORM Nest module | `postgres.module.ts` |
+| `infra/database/` | Mongo/Mongoose module (optional / unused path) | `database.module.ts` |
+| `infra/redis/` | Redis client DI (`REDIS_CLIENT`) | `redis.module.ts` |
+| `infra/persistence/postgres/entities.ts` | Entity registry for TypeORM | import list |
+| `infra/persistence/postgres/auth/` | Users, customers, roles, sessions, identities | `typeorm-user.repository.ts`, `*.entity.ts` |
+| `infra/persistence/postgres/merchant/` | Shops, staff, gallery | `shop.entity.ts`, `staff.entity.ts` |
+| `infra/persistence/postgres/catalog/` | Categories, services, packages | `*.entity.ts` |
+| `infra/persistence/postgres/scheduling/` | Schedules, exceptions | `schedule.entity.ts` |
+| `infra/persistence/postgres/transactions/` | Bookings, payments, reviews | `booking.entity.ts`, `payment.entity.ts` |
+| `infra/persistence/postgres/bookings/` | Booking/availability adapters | `typeorm-booking.repository.ts`, `typeorm-availability.repository.ts` |
+| `infra/persistence/postgres/discovery/` | Discovery queries | `typeorm-discovery.repository.ts` |
+| `infra/persistence/postgres/shops/` | Shop profile adapters | under `shops/` |
+| `infra/persistence/redis/` | OTP store etc. | `redis-otp.store.ts` |
+| `infra/auth/` | JWT, console/nodemailer email, SMS, social stub | `jwt-token.service.ts`, `*-email.sender.ts` |
+
+### Schema & seed
+
+| Path | Responsibility |
+|---|---|
+| `db/migrations/` | Sole schema source (Flyway CE); do not edit applied files |
+| `seed/01-auth/` … `04-transactions/` | Ordered SQL seeds; `00-roles.sql` = system `customer` role |
+| `seed/seeder.js` | Runner (`pnpm seed` → `.env` / `DATABASE_URL`) |
+
+### Connections
+
+| Concern | Config location |
+|---|---|
+| Postgres | `src/config/configuration.ts`, `postgres.config.ts`, `DATABASE_URL` / `POSTGRES_*` |
+| Redis | same config + `REDIS_URL` / `REDIS_HOST` |
+| BullMQ | `app.module.ts` `BullModule.forRootAsync` → Redis |
+| SMTP | `SMTP_*` → `smtp.*` in configuration |
+
+## Cross-cutting
+
+| Path | Responsibility | Key files |
+|---|---|---|
+| `src/common/guards/` | JWT auth guard | `auth.guard.ts` |
+| `src/common/decorators/` | `@CurrentAuth` etc. | `index.ts` |
+| `src/common/filters/` | Exception → API envelope | `all-exceptions.filter.ts` |
+| `src/common/interceptors/` | Logging | `logging.interceptor.ts` |
+| `src/common/pipes/` | Validation pipes (if any) | — |
+| `src/common/constants/` | Shared constants | — |
+| `src/config/` | Env load + Joi schema | `configuration.ts`, `env.validation.ts` |
+| `src/shared/types/` | Cross-module TS types | `booking.ts`, `discovery.ts`, `shop-profile.ts` |
+| `src/health/` | Terminus health | `health.controller.ts`, `health.module.ts` |
+
+## Tests
+
+| Kind | Location |
+|---|---|
+| Unit | `src/**/*.spec.ts` next to source |
+| E2E | `test/*.e2e-spec.ts` |
+| E2E bootstrap | `test/helpers/create-test-app.ts` |
+| E2E DB/Redis reset | `test/helpers/postgres-test-utils.ts`, `redis-test-utils.ts` (truncate excludes `roles`, `spatial_ref_sys`, `flyway_schema_history`) |
+| E2E config | `test/jest-e2e.json`, `test/setup-env.ts` |
+| Unit Jest | `jest.config.ts` |
+
+## Agent guidance (not product code)
+
+| Path | Use for |
+|---|---|
+| `.cursor/rules/*.mdc` | Always/glob rules (architecture, auth, Flyway, e2e, verification) |
+| `.cursor/skills/*/SKILL.md` | On-demand skills (e2e-testing, testing-workflow, postgres, bullmq) |
+| `.claude/skills/` | Flyway + Nest standards for Claude |
+
+## Ignore / irrelevant to product tasks
+
+`node_modules/`, `dist/`, `.flyway/`, `.pnpm-store/`, `report.html`, `report.json`, `.git/`, lockfile churn unless dependency task.

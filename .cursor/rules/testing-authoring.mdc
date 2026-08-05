@@ -18,6 +18,7 @@ When adding or changing a **service**, **controller**, or other non-trivial doma
    - **Controller**: request mapping defaults + errors thrown in the controller (e.g. `MISSING_GEO`)
 3. Mock hexagonal **port tokens**, not TypeORM/Mongoose/Redis clients.
 4. Run `pnpm test` and fix failures before claiming the feature done.
+5. If e2e is relevant, follow [e2e-testing.mdc](e2e-testing.mdc) and the **e2e-testing** skill — do not restate the decision table here.
 
 Reference patterns:
 - `src/modules/auth/auth.service.spec.ts`
@@ -39,6 +40,7 @@ Reference patterns:
 
 - Use `supertest` with the Nest HTTP server and validate the mobile API envelope (`success`, `data`, `error.code`, `error.message`).
 - Prefer the shared e2e helpers in `test/helpers` over ad-hoc setup/teardown.
+- Full e2e gate, skip policy, and pitfalls → [e2e-testing.mdc](e2e-testing.mdc) + **e2e-testing** skill.
 
 ## Never skip silently
 

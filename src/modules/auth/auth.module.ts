@@ -57,7 +57,6 @@ import { UserSessionCleanupService } from '@/modules/auth/user-session-cleanup.s
     AuthGuard,
     UserSessionCleanupService,
     ConsoleEmailSender,
-    NodemailerEmailSender,
     { provide: USER_REPOSITORY, useClass: TypeOrmUserRepository },
     { provide: SESSION_REPOSITORY, useClass: TypeOrmSessionRepository },
     { provide: OTP_STORE, useClass: RedisOtpStore },
@@ -65,15 +64,14 @@ import { UserSessionCleanupService } from '@/modules/auth/user-session-cleanup.s
     { provide: SMS_SENDER, useClass: ConsoleSmsSender },
     {
       provide: EMAIL_SENDER,
-      inject: [ConfigService, ConsoleEmailSender, NodemailerEmailSender],
-      useFactory: (
-        config: ConfigService,
-        consoleEmailSender: ConsoleEmailSender,
-        nodemailerEmailSender: NodemailerEmailSender,
-      ) => {
+      inject: [ConfigService, ConsoleEmailSender],
+      useFactory: (config: ConfigService, consoleEmailSender: ConsoleEmailSender) => {
         const smtpUser = config.get<string>('smtp.user');
         const smtpAppPassword = config.get<string>('smtp.appPassword');
-        return smtpUser && smtpAppPassword ? nodemailerEmailSender : consoleEmailSender;
+        if (smtpUser && smtpAppPassword) {
+          return new NodemailerEmailSender(config);
+        }
+        return consoleEmailSender;
       },
     },
     { provide: SOCIAL_TOKEN_VERIFIER, useClass: StubSocialTokenVerifier },

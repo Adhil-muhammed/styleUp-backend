@@ -15,6 +15,8 @@ Tailor to what was built. Omit items that don't apply; add specific ones that do
 - [ ] pnpm run lint — zero ESLint/Prettier errors
 - [ ] Unit tests added/updated for new/changed service and controller logic (colocated *.spec.ts)
 - [ ] pnpm test — all unit tests pass
+- [ ] E2E tests added/updated under test/*.e2e-spec.ts (when e2e-relevant — see e2e-testing rule/skill)
+- [ ] pnpm run test:e2e:prep + pnpm run test:e2e — pass (when e2e-relevant or e2e changed)
 - [ ] [specific endpoint] manually verified: GET /api/v1/health → 200 { status: ok }
 - [ ] No unintended scope creep (list adjacent changes if any)
 - [ ] No new npm packages added without flagging

@@ -9,7 +9,7 @@
  * Run via: pnpm migrate | pnpm migrate:info | pnpm migrate:validate | pnpm migrate:repair
  */
 
-require('dotenv').config();
+require('dotenv').config({ path: process.env.NODE_ENV === 'test' ? '.env.test' : '.env' });
 
 /**
  * Parses DATABASE_URL (postgresql://user:pass@host:port/db[?params]) into JDBC

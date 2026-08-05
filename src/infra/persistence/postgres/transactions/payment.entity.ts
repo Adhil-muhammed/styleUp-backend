@@ -48,6 +48,10 @@ export class PaymentEntity {
   @Column({ name: 'raw_response', type: 'jsonb', nullable: true })
   rawResponse!: Record<string, unknown> | null;
 
+  /** Set to now() when transaction_status transitions to 'success'. Null before confirmation. */
+  @Column({ name: 'paid_at', type: 'timestamptz', nullable: true })
+  paidAt!: Date | null;
+
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt!: Date;
 

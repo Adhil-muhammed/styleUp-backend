@@ -12,12 +12,14 @@ import { AuthModule } from '@/modules/auth';
 import { DiscoveryModule } from '@/modules/discovery';
 import { RatingModule } from '@/modules/rating/rating.module';
 import { ShopsModule } from '@/modules/shops';
+import { BookingsModule } from '@/modules/bookings';
 import { LoggingInterceptor } from '@/common/interceptors/logging.interceptor';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
+      envFilePath: process.env['NODE_ENV'] === 'test' ? '.env.test' : '.env',
       load: [configuration],
       validationSchema: envValidationSchema,
       validationOptions: { abortEarly: true },
@@ -51,6 +53,7 @@ import { LoggingInterceptor } from '@/common/interceptors/logging.interceptor';
     AuthModule,
     DiscoveryModule,
     ShopsModule,
+    BookingsModule,
     RatingModule,
     HealthModule,
   ],

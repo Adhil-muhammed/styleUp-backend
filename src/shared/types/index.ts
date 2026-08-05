@@ -12,6 +12,19 @@ export type {
   PaginatedSalons,
 } from './discovery';
 export type {
+  BookingLineItem,
+  BookingQuote,
+  TimeSlot,
+  AvailabilityResult,
+  BookingCreated,
+  BookingConfirmation,
+  PaymentMethodKind,
+  PaymentMethodItem,
+  PaymentMethodsResult,
+  QuoteInput,
+  ResolvedServiceLine,
+} from './booking';
+export type {
   ShopProfileGender,
   ShopSpecialist,
   WorkingHoursRow,
