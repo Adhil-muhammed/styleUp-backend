@@ -34,6 +34,16 @@ export class TypeOrmPaymentMethodRepository implements PaymentMethodRepositoryPo
   async findById(id: string): Promise<PaymentMethodItem | null> {
     const row = await this.repo.findOne({ where: { id } });
     if (!row) return null;
+    return this.toItem(row);
+  }
+
+  async findByIdForUser(id: string, userId: string): Promise<PaymentMethodItem | null> {
+    const row = await this.repo.findOne({ where: { id, userId } });
+    if (!row) return null;
+    return this.toItem(row);
+  }
+
+  private toItem(row: PaymentMethodEntity): PaymentMethodItem {
     return {
       id: row.id,
       kind: row.kind,

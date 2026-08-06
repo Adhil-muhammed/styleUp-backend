@@ -55,6 +55,25 @@ export interface PaymentMethodsResult {
   defaultMethodId: string;
 }
 
+/** Razorpay UPI Intent payload returned from POST /bookings/:id/pay. */
+export interface PaymentIntentResult {
+  paymentId: string;
+  razorpayOrderId: string;
+  razorpayKeyId: string;
+  amountPaise: number;
+  currency: string;
+  status: string;
+}
+
+/** Poll response for GET /bookings/:id/payment-status. */
+export interface PaymentStatusResult {
+  bookingId: string;
+  bookingStatus: string;
+  paymentStatus: string;
+  razorpayOrderId?: string;
+  transactionStatus?: string;
+}
+
 /** Input for service-layer quote computation. */
 export interface QuoteInput {
   shopId: string;

@@ -64,6 +64,8 @@ export const envValidationSchema = Joi.object({
   AUTH_SESSION_CLEANUP_ENABLED: Joi.boolean().default(true),
   RAZORPAY_KEY_ID: Joi.string().allow('').optional(),
   RAZORPAY_KEY_SECRET: Joi.string().allow('').optional(),
+  RAZORPAY_WEBHOOK_SECRET: Joi.string().allow('').optional(),
+  RAZORPAY_ENABLED: Joi.boolean().default(false),
 })
   .or('JWT_SECRET', 'JWT_ACCESS_SECRET')
   .messages({

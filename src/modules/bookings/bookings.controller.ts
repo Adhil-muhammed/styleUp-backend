@@ -85,6 +85,16 @@ export class BookingsController {
     return { success: true, data };
   }
 
+  @Get('mobile/v1/bookings/:bookingId/payment-status')
+  @ApiParam({ name: 'bookingId', type: String })
+  async getPaymentStatus(
+    @Param('bookingId') bookingId: string,
+    @CurrentAuth() auth: AuthenticatedRequest['authUser'],
+  ): Promise<ApiSuccess<unknown>> {
+    const data = await this.bookingsService.getPaymentStatus(bookingId, auth.userId);
+    return { success: true, data };
+  }
+
   @Get('mobile/v1/bookings/:bookingId/confirmation')
   @ApiParam({ name: 'bookingId', type: String })
   async getConfirmation(

@@ -4,7 +4,6 @@ import { Repository, EntityManager } from 'typeorm';
 import { BookingEntity } from '@/infra/persistence/postgres/transactions/booking.entity';
 import { BookingItemEntity } from '@/infra/persistence/postgres/transactions/booking-item.entity';
 import { BookingTimelineEntity } from '@/infra/persistence/postgres/transactions/booking-timeline.entity';
-import { PaymentEntity } from '@/infra/persistence/postgres/transactions/payment.entity';
 import { ShopServiceEntity } from '@/infra/persistence/postgres/catalog/shop-service.entity';
 import { PackageEntity } from '@/infra/persistence/postgres/catalog/package.entity';
 import { PackageItemEntity } from '@/infra/persistence/postgres/catalog/package-item.entity';
@@ -16,8 +15,6 @@ import {
   BookingPaymentStatus,
   BookingItemStatus,
   TimelineEventType,
-  TransactionStatus,
-  PaymentMethod,
 } from '@/infra/persistence/postgres/transactions/transactions.enums';
 import {
   BookingRepositoryPort,
@@ -207,56 +204,6 @@ export class TypeOrmBookingRepository implements BookingRepositoryPort {
     if (!booking) return null;
 
     return this.buildBookingCreated(booking, null, this.em);
-  }
-
-  async confirmPayment(
-    bookingId: string,
-    customerId: string,
-    _paymentMethodKind: string,
-  ): Promise<Date> {
-    return this.em.transaction(async (tx) => {
-      const booking = await tx.findOne(BookingEntity, { where: { id: bookingId, customerId } });
-      if (!booking) throw new Error('BOOKING_NOT_FOUND');
-      if (booking.paymentStatus === BookingPaymentStatus.PAID) throw new Error('ALREADY_PAID');
-
-      const paidAt = new Date();
-
-      await tx.save(
-        PaymentEntity,
-        tx.create(PaymentEntity, {
-          bookingId,
-          gateway: 'mock',
-          gatewayTransactionId: null,
-          gatewayOrderId: null,
-          paymentMethod: PaymentMethod.UPI,
-          amountPaise: booking.totalPricePaise,
-          refundedAmountPaise: '0',
-          transactionStatus: TransactionStatus.SUCCESS,
-          rawResponse: null,
-          paidAt,
-        }),
-      );
-
-      await tx.update(
-        BookingEntity,
-        { id: bookingId },
-        {
-          bookingStatus: BookingStatus.CONFIRMED,
-          paymentStatus: BookingPaymentStatus.PAID,
-        },
-      );
-
-      await tx.save(
-        BookingTimelineEntity,
-        tx.create(BookingTimelineEntity, {
-          bookingId,
-          eventType: TimelineEventType.CONFIRMED,
-          note: null,
-        }),
-      );
-
-      return paidAt;
-    });
   }
 
   async getConfirmation(

@@ -13,6 +13,7 @@ import {
   PaymentMethodRepositoryPort,
 } from '@/modules/bookings/ports/payment-method.repository.port';
 import { BookingsService } from './bookings.service';
+import { PaymentsService } from '@/modules/payments/payments.service';
 import type {
   BookingConfirmation,
   BookingCreated,
@@ -41,7 +42,6 @@ function makeBookingMock(): BookingMock {
     hasDoubleBooking: jest.fn(),
     createBooking: jest.fn(),
     findByIdForCustomer: jest.fn(),
-    confirmPayment: jest.fn(),
     getConfirmation: jest.fn(),
   };
 }
@@ -50,8 +50,14 @@ function makePaymentMethodMock(): PaymentMethodMock {
   return {
     listForUser: jest.fn(),
     findById: jest.fn(),
+    findByIdForUser: jest.fn(),
   };
 }
+
+const mockPaymentsService = {
+  initiateUpiPayment: jest.fn(),
+  getPaymentStatusForBooking: jest.fn(),
+};
 
 const SHOP_ID = 'shop-uuid';
 const SPECIALIST_ID = 'staff-uuid';
@@ -107,6 +113,7 @@ describe('BookingsService', () => {
         { provide: AVAILABILITY_REPOSITORY, useValue: availMock },
         { provide: BOOKING_REPOSITORY, useValue: bookingMock },
         { provide: PAYMENT_METHOD_REPOSITORY, useValue: pmMock },
+        { provide: PaymentsService, useValue: mockPaymentsService },
       ],
     }).compile();
 
@@ -253,7 +260,7 @@ describe('BookingsService', () => {
 
     beforeEach(() => {
       availMock.specialistBelongsToShop.mockResolvedValue(true);
-      pmMock.findById.mockResolvedValue(mockPaymentMethod);
+      pmMock.findByIdForUser.mockResolvedValue(mockPaymentMethod);
       bookingMock.resolveServiceLines.mockResolvedValue([mockServiceLine]);
       bookingMock.isSlotTaken.mockResolvedValue(false);
       bookingMock.hasDoubleBooking.mockResolvedValue(false);
@@ -313,38 +320,35 @@ describe('BookingsService', () => {
 
   describe('payBooking', () => {
     const dto = { paymentMethodId: PAYMENT_METHOD_ID };
-    const paidAt = new Date('2026-08-01T10:00:00Z');
 
     beforeEach(() => {
-      pmMock.findById.mockResolvedValue(mockPaymentMethod);
-      bookingMock.confirmPayment.mockResolvedValue(paidAt);
-      bookingMock.findByIdForCustomer.mockResolvedValue(mockBookingCreated);
+      pmMock.findByIdForUser.mockResolvedValue(mockPaymentMethod);
+      mockPaymentsService.initiateUpiPayment.mockResolvedValue({
+        paymentId: 'pay-uuid',
+        razorpayOrderId: 'order_mock_1',
+        razorpayKeyId: 'rzp_test_mock_key',
+        amountPaise: 30000,
+        currency: 'INR',
+        status: 'processing',
+      });
     });
 
-    it('throws BOOKING_NOT_FOUND when booking missing', async () => {
-      bookingMock.confirmPayment.mockRejectedValue(new Error('BOOKING_NOT_FOUND'));
+    it('throws PAYMENT_METHOD_NOT_FOUND when method missing', async () => {
+      pmMock.findByIdForUser.mockResolvedValue(null);
 
       await expect(service.payBooking(BOOKING_ID, CUSTOMER_ID, dto)).rejects.toMatchObject({
         status: 404,
-        response: { code: 'BOOKING_NOT_FOUND' },
+        response: { code: 'PAYMENT_METHOD_NOT_FOUND' },
       });
     });
 
-    it('throws ALREADY_PAID when booking already paid', async () => {
-      bookingMock.confirmPayment.mockRejectedValue(new Error('ALREADY_PAID'));
-
-      await expect(service.payBooking(BOOKING_ID, CUSTOMER_ID, dto)).rejects.toMatchObject({
-        status: 409,
-        response: { code: 'ALREADY_PAID' },
-      });
-    });
-
-    it('returns pay result with paidAt ISO string', async () => {
+    it('returns Razorpay intent payload', async () => {
       const result = await service.payBooking(BOOKING_ID, CUSTOMER_ID, dto);
 
       expect(result.bookingId).toBe(BOOKING_ID);
-      expect(result.paidAt).toBe(paidAt.toISOString());
-      expect(result.currency).toBe('INR');
+      expect(result.razorpayOrderId).toBe('order_mock_1');
+      expect(result.status).toBe('processing');
+      expect(mockPaymentsService.initiateUpiPayment).toHaveBeenCalledWith(BOOKING_ID, CUSTOMER_ID);
     });
   });
 

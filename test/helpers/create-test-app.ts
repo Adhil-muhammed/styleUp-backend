@@ -9,7 +9,7 @@ export async function createTestApp(): Promise<INestApplication> {
     imports: [AppModule],
   }).compile();
 
-  const app = moduleFixture.createNestApplication({ bufferLogs: true });
+  const app = moduleFixture.createNestApplication({ bufferLogs: true, rawBody: true });
 
   const logger = app.get(Logger);
   app.useLogger(logger);

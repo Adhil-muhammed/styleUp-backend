@@ -14,6 +14,7 @@ const mockService = {
   createBooking: jest.fn(),
   getPaymentMethods: jest.fn(),
   payBooking: jest.fn(),
+  getPaymentStatus: jest.fn(),
   getConfirmation: jest.fn(),
 };
 
@@ -117,10 +118,12 @@ describe('BookingsController', () => {
   it('payBooking passes bookingId and customerId from auth', async () => {
     const payResult = {
       bookingId: BOOKING_ID,
-      status: 'confirmed',
-      paidAt: '2026-08-01T10:00:00.000Z',
-      totalCents: 300,
+      paymentId: 'pay-uuid',
+      razorpayOrderId: 'order_mock_1',
+      razorpayKeyId: 'rzp_test_mock_key',
+      amountPaise: 30000,
       currency: 'INR',
+      status: 'processing',
     };
     mockService.payBooking.mockResolvedValue(payResult);
 

@@ -23,12 +23,15 @@ import {
   PostBookingsDto,
   PostBookingsPayDto,
 } from '@/modules/bookings/dto';
+import { PaymentsService } from '@/modules/payments/payments.service';
 import {
   AvailabilityResult,
   BookingConfirmation,
   BookingCreated,
   BookingQuote,
+  PaymentIntentResult,
   PaymentMethodsResult,
+  PaymentStatusResult,
 } from '@/shared/types';
 
 const AVAILABILITY_LOOK_AHEAD_DAYS = 30;
@@ -43,6 +46,7 @@ export class BookingsService {
     private readonly bookingRepo: BookingRepositoryPort,
     @Inject(PAYMENT_METHOD_REPOSITORY)
     private readonly paymentMethodRepo: PaymentMethodRepositoryPort,
+    private readonly paymentsService: PaymentsService,
   ) {}
 
   async getAvailability(
@@ -159,7 +163,7 @@ export class BookingsService {
       });
     }
 
-    const paymentMethod = await this.paymentMethodRepo.findById(paymentMethodId);
+    const paymentMethod = await this.paymentMethodRepo.findByIdForUser(paymentMethodId, customerId);
     if (!paymentMethod) {
       throw new NotFoundException({
         code: 'PAYMENT_METHOD_NOT_FOUND',
@@ -254,14 +258,11 @@ export class BookingsService {
     bookingId: string,
     customerId: string,
     dto: PostBookingsPayDto,
-  ): Promise<{
-    bookingId: string;
-    status: string;
-    paidAt: string;
-    totalCents: number;
-    currency: string;
-  }> {
-    const paymentMethod = await this.paymentMethodRepo.findById(dto.paymentMethodId);
+  ): Promise<PaymentIntentResult & { bookingId: string }> {
+    const paymentMethod = await this.paymentMethodRepo.findByIdForUser(
+      dto.paymentMethodId,
+      customerId,
+    );
     if (!paymentMethod) {
       throw new NotFoundException({
         code: 'PAYMENT_METHOD_NOT_FOUND',
@@ -269,29 +270,12 @@ export class BookingsService {
       });
     }
 
-    let paidAt: Date;
-    try {
-      paidAt = await this.bookingRepo.confirmPayment(bookingId, customerId, paymentMethod.kind);
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err);
-      if (msg === 'BOOKING_NOT_FOUND') {
-        throw new NotFoundException({ code: 'BOOKING_NOT_FOUND', message: 'Booking not found' });
-      }
-      if (msg === 'ALREADY_PAID') {
-        throw new ConflictException({ code: 'ALREADY_PAID', message: 'Booking already paid' });
-      }
-      throw err;
-    }
+    const intent = await this.paymentsService.initiateUpiPayment(bookingId, customerId);
+    return { bookingId, ...intent };
+  }
 
-    const booking = await this.bookingRepo.findByIdForCustomer(bookingId, customerId);
-
-    return {
-      bookingId,
-      status: booking?.status ?? 'confirmed',
-      paidAt: paidAt.toISOString(),
-      totalCents: booking?.quote.totalCents ?? 0,
-      currency: CURRENCY,
-    };
+  async getPaymentStatus(bookingId: string, customerId: string): Promise<PaymentStatusResult> {
+    return this.paymentsService.getPaymentStatusForBooking(bookingId, customerId);
   }
 
   async getConfirmation(bookingId: string, customerId: string): Promise<BookingConfirmation> {

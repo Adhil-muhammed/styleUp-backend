@@ -21,6 +21,8 @@ export type {
   PaymentMethodKind,
   PaymentMethodItem,
   PaymentMethodsResult,
+  PaymentIntentResult,
+  PaymentStatusResult,
   QuoteInput,
   ResolvedServiceLine,
 } from './booking';

@@ -1467,6 +1467,54 @@
       "operation": "migrate",
       "exception": null,
       "licenseFailed": false
+    },
+    {
+      "initialSchemaVersion": "14",
+      "targetSchemaVersion": "15",
+      "schemaName": "",
+      "migrations": [
+        {
+          "category": "Versioned",
+          "version": "15",
+          "description": "razorpay payment processing",
+          "type": "SQL",
+          "filepath": "/home/adhil/styleUp-backend/db/migrations/V15__razorpay_payment_processing.sql",
+          "executionTime": 63
+        }
+      ],
+      "migrationsExecuted": 1,
+      "success": true,
+      "flywayVersion": "9.22.3",
+      "database": "styleup_test",
+      "warnings": [],
+      "timestamp": "2026-08-05T23:16:34.727173979",
+      "operation": "migrate",
+      "exception": null,
+      "licenseFailed": false
+    },
+    {
+      "initialSchemaVersion": "14",
+      "targetSchemaVersion": "15",
+      "schemaName": "",
+      "migrations": [
+        {
+          "category": "Versioned",
+          "version": "15",
+          "description": "razorpay payment processing",
+          "type": "SQL",
+          "filepath": "/home/adhil/styleUp-backend/db/migrations/V15__razorpay_payment_processing.sql",
+          "executionTime": 3008
+        }
+      ],
+      "migrationsExecuted": 1,
+      "success": true,
+      "flywayVersion": "9.22.3",
+      "database": "postgres",
+      "warnings": [],
+      "timestamp": "2026-08-06T00:13:00.220387347",
+      "operation": "migrate",
+      "exception": null,
+      "licenseFailed": false
     }
   ]
 }

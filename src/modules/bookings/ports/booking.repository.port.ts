@@ -52,14 +52,6 @@ export interface BookingRepositoryPort {
   /** Fetches full booking data needed for the POST /bookings response. */
   findByIdForCustomer(bookingId: string, customerId: string): Promise<BookingCreated | null>;
 
-  /**
-   * Inserts a payments row with paid_at = now(), updates booking status to
-   * 'confirmed' and payment_status to 'paid', and appends a 'confirmed'
-   * timeline entry — all in one transaction.
-   * Returns the paidAt timestamp.
-   */
-  confirmPayment(bookingId: string, customerId: string, paymentMethodKind: string): Promise<Date>;
-
   /** Returns the confirmation/receipt data for PaymentSuccess screen. */
   getConfirmation(bookingId: string, customerId: string): Promise<BookingConfirmation | null>;
 }

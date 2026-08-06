@@ -13,6 +13,7 @@ import { DiscoveryModule } from '@/modules/discovery';
 import { RatingModule } from '@/modules/rating/rating.module';
 import { ShopsModule } from '@/modules/shops';
 import { BookingsModule } from '@/modules/bookings';
+import { PaymentsModule } from '@/modules/payments';
 import { LoggingInterceptor } from '@/common/interceptors/logging.interceptor';
 
 @Module({
@@ -54,6 +55,7 @@ import { LoggingInterceptor } from '@/common/interceptors/logging.interceptor';
     DiscoveryModule,
     ShopsModule,
     BookingsModule,
+    PaymentsModule,
     RatingModule,
     HealthModule,
   ],

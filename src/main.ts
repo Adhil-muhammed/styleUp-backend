@@ -8,7 +8,7 @@ import { AppModule } from './app.module';
 import { AllExceptionsFilter } from '@/common/filters/all-exceptions.filter';
 
 async function bootstrap(): Promise<void> {
-  const app = await NestFactory.create(AppModule, { bufferLogs: true });
+  const app = await NestFactory.create(AppModule, { bufferLogs: true, rawBody: true });
 
   const logger = app.get(Logger);
   app.useLogger(logger);

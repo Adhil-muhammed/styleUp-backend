@@ -8,4 +8,7 @@ export interface PaymentMethodRepositoryPort {
 
   /** Returns null when the method does not exist. */
   findById(id: string): Promise<PaymentMethodItem | null>;
+
+  /** Returns null when the method does not exist or does not belong to the user. */
+  findByIdForUser(id: string, userId: string): Promise<PaymentMethodItem | null>;
 }

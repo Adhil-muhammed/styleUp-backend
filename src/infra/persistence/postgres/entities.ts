@@ -22,6 +22,7 @@ import { BookingItemEntity } from '@/infra/persistence/postgres/transactions/boo
 import { BookingTimelineEntity } from '@/infra/persistence/postgres/transactions/booking-timeline.entity';
 import { PaymentEntity } from '@/infra/persistence/postgres/transactions/payment.entity';
 import { PaymentMethodEntity } from '@/infra/persistence/postgres/transactions/payment-method.entity';
+import { PaymentWebhookEventEntity } from '@/infra/persistence/postgres/transactions/payment-webhook-event.entity';
 import { RefundEntity } from '@/infra/persistence/postgres/transactions/refund.entity';
 import { ReviewEntity } from '@/infra/persistence/postgres/transactions/review.entity';
 import { SettlementEntity } from '@/infra/persistence/postgres/transactions/settlement.entity';
@@ -51,6 +52,7 @@ export const POSTGRES_ENTITIES = [
   BookingTimelineEntity,
   PaymentEntity,
   PaymentMethodEntity,
+  PaymentWebhookEventEntity,
   RefundEntity,
   SettlementEntity,
   ReviewEntity,
