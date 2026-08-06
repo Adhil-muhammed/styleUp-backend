@@ -4,7 +4,9 @@ import {
   Inject,
   Injectable,
   NotFoundException,
+  NotImplementedException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import {
   AVAILABILITY_REPOSITORY,
   AvailabilityRepositoryPort,
@@ -22,17 +24,25 @@ import {
   PostBookingsQuoteDto,
   PostBookingsDto,
   PostBookingsPayDto,
+  GetBookingsListQueryDto,
+  PatchBookingsReminderDto,
 } from '@/modules/bookings/dto';
 import { PaymentsService } from '@/modules/payments/payments.service';
+import { BookingReminderProducerService } from '@/modules/notifications/booking-reminder-producer.service';
+import { ReminderOption, isReminderOption } from '@/modules/bookings/domain/reminder-option';
 import {
   AvailabilityResult,
   BookingConfirmation,
   BookingCreated,
   BookingQuote,
+  BookingCancelledResult,
+  BookingReminderResult,
+  PaginatedBookings,
   PaymentIntentResult,
   PaymentMethodsResult,
   PaymentStatusResult,
 } from '@/shared/types';
+import { BookingStatus } from '@/infra/persistence/postgres/transactions/transactions.enums';
 
 const AVAILABILITY_LOOK_AHEAD_DAYS = 30;
 const CURRENCY = 'INR';
@@ -47,6 +57,8 @@ export class BookingsService {
     @Inject(PAYMENT_METHOD_REPOSITORY)
     private readonly paymentMethodRepo: PaymentMethodRepositoryPort,
     private readonly paymentsService: PaymentsService,
+    private readonly reminderProducer: BookingReminderProducerService,
+    private readonly config: ConfigService,
   ) {}
 
   async getAvailability(
@@ -284,6 +296,120 @@ export class BookingsService {
       throw new NotFoundException({ code: 'BOOKING_NOT_FOUND', message: 'Booking not found' });
     }
     return confirmation;
+  }
+
+  async listBookings(
+    customerId: string,
+    query: GetBookingsListQueryDto,
+  ): Promise<PaginatedBookings> {
+    const page = query.page ?? 1;
+    const perPage = query.perPage ?? 20;
+    return this.bookingRepo.listForCustomer({
+      customerId,
+      tab: query.status,
+      page,
+      perPage,
+    });
+  }
+
+  async updateReminder(
+    bookingId: string,
+    customerId: string,
+    dto: PatchBookingsReminderDto,
+  ): Promise<BookingReminderResult> {
+    const booking = await this.bookingRepo.findOwnedById(bookingId, customerId);
+    if (!booking) {
+      throw new NotFoundException({ code: 'BOOKING_NOT_FOUND', message: 'Booking not found' });
+    }
+
+    if (booking.scheduledStart.getTime() <= Date.now()) {
+      throw new BadRequestException({
+        code: 'PAST_BOOKING',
+        message: 'Cannot set reminder on past appointment',
+      });
+    }
+
+    if (dto.reminderEnabled) {
+      if (!dto.reminderOptionId || !isReminderOption(dto.reminderOptionId)) {
+        throw new BadRequestException({
+          code: 'VALIDATION_ERROR',
+          message: 'reminderOptionId is required when reminder is enabled',
+        });
+      }
+    }
+
+    const result = await this.bookingRepo.updateReminder({
+      bookingId,
+      customerId,
+      reminderEnabled: dto.reminderEnabled,
+      reminderOptionId: dto.reminderEnabled ? (dto.reminderOptionId ?? null) : null,
+    });
+
+    if (!result) {
+      throw new NotFoundException({ code: 'BOOKING_NOT_FOUND', message: 'Booking not found' });
+    }
+
+    if (dto.reminderEnabled && dto.reminderOptionId) {
+      await this.reminderProducer.scheduleReminder(
+        bookingId,
+        customerId,
+        booking.scheduledStart,
+        dto.reminderOptionId as ReminderOption,
+      );
+    } else {
+      await this.reminderProducer.cancelReminder(bookingId);
+    }
+
+    return result;
+  }
+
+  async cancelBooking(bookingId: string, customerId: string): Promise<BookingCancelledResult> {
+    const booking = await this.bookingRepo.findOwnedById(bookingId, customerId);
+    if (!booking) {
+      throw new NotFoundException({ code: 'BOOKING_NOT_FOUND', message: 'Booking not found' });
+    }
+
+    if (
+      booking.bookingStatus === BookingStatus.CANCELLED ||
+      booking.bookingStatus === BookingStatus.NO_SHOW
+    ) {
+      throw new BadRequestException({
+        code: 'ALREADY_CANCELLED',
+        message: 'Booking already cancelled',
+      });
+    }
+
+    const cancelMinHours = this.config.get<number>('booking.cancelMinHoursBefore') ?? 2;
+    const msUntilStart = booking.scheduledStart.getTime() - Date.now();
+    const minMs = cancelMinHours * 60 * 60 * 1000;
+    if (msUntilStart < minMs) {
+      throw new ConflictException({
+        code: 'CANCEL_WINDOW_CLOSED',
+        message: 'Too close to appointment time to cancel',
+      });
+    }
+
+    const result = await this.bookingRepo.cancelBooking(bookingId, customerId);
+    if (!result) {
+      throw new NotFoundException({ code: 'BOOKING_NOT_FOUND', message: 'Booking not found' });
+    }
+
+    await this.reminderProducer.cancelReminder(bookingId);
+    return result;
+  }
+
+  rescheduleNotImplemented(): never {
+    throw new NotImplementedException({
+      code: 'NOT_IMPLEMENTED',
+      message: 'Reschedule is not available in v1',
+    });
+  }
+
+  reviewNotImplemented(): never {
+    throw new NotImplementedException({
+      code: 'NOT_IMPLEMENTED',
+      message: 'Reviews are not available in v1',
+    });
   }
 
   // ---------------------------------------------------------------------------

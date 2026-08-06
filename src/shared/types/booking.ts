@@ -92,3 +92,43 @@ export interface ResolvedServiceLine {
   pricePaise: bigint;
   durationMinutes: number;
 }
+
+export type BookingListTab = 'upcoming' | 'past';
+
+export interface BookingListItem {
+  id: string;
+  status: BookingListTab;
+  dateTimeLabel: string;
+  shopName: string;
+  address: string;
+  imageUri: string;
+  services: string[];
+  reminderEnabled: boolean;
+  reminderLabel: string;
+  dimmed?: boolean;
+}
+
+export interface PaginatedBookings {
+  data: BookingListItem[];
+  meta: {
+    total: number;
+    page: number;
+    perPage: number;
+    totalPages: number;
+  };
+}
+
+export interface BookingReminderResult {
+  id: string;
+  reminderEnabled: boolean;
+  reminderLabel: string;
+}
+
+export type BookingLifecycleStatus =
+  'pending' | 'confirmed' | 'in_progress' | 'completed' | 'cancelled';
+
+export interface BookingCancelledResult {
+  id: string;
+  status: BookingLifecycleStatus;
+  cancelledAt: string;
+}

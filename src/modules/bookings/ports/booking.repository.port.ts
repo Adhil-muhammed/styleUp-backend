@@ -1,4 +1,12 @@
-import { BookingConfirmation, BookingCreated, ResolvedServiceLine } from '@/shared/types';
+import {
+  BookingConfirmation,
+  BookingCreated,
+  BookingListTab,
+  BookingReminderResult,
+  BookingCancelledResult,
+  PaginatedBookings,
+  ResolvedServiceLine,
+} from '@/shared/types';
 
 export const BOOKING_REPOSITORY = Symbol('BOOKING_REPOSITORY');
 
@@ -23,35 +31,53 @@ export interface CreateBookingItemInput {
   unitPricePaise: bigint;
 }
 
+export interface OwnedBookingRow {
+  id: string;
+  customerId: string;
+  scheduledStart: Date;
+  bookingStatus: string;
+  paymentStatus: string;
+  reminderEnabled: boolean;
+  reminderOptionId: string | null;
+  cancelledAt: Date | null;
+}
+
+export interface ListBookingsInput {
+  customerId: string;
+  tab: BookingListTab;
+  page: number;
+  perPage: number;
+}
+
+export interface UpdateReminderInput {
+  bookingId: string;
+  customerId: string;
+  reminderEnabled: boolean;
+  reminderOptionId: string | null;
+}
+
 export interface BookingRepositoryPort {
-  /**
-   * Resolves variant / package line items for quote or booking creation.
-   * Returns empty array when no ids are supplied.
-   */
   resolveServiceLines(
     shopId: string,
     shopServiceIds: string[],
     packageId: string | null,
   ): Promise<ResolvedServiceLine[]>;
 
-  /** Returns true when the staff already has an active booking_item overlapping the window. */
   isSlotTaken(staffId: string, start: Date, end: Date): Promise<boolean>;
 
-  /**
-   * Returns true when the customer already has a non-cancelled/no-show booking
-   * whose time window overlaps [start, end).
-   */
   hasDoubleBooking(customerId: string, start: Date, end: Date): Promise<boolean>;
 
-  /**
-   * Creates the bookings row, one booking_items row per service line, and the
-   * initial booking_timeline 'created' entry — all in one transaction.
-   */
   createBooking(input: CreateBookingInput): Promise<BookingCreated>;
 
-  /** Fetches full booking data needed for the POST /bookings response. */
   findByIdForCustomer(bookingId: string, customerId: string): Promise<BookingCreated | null>;
 
-  /** Returns the confirmation/receipt data for PaymentSuccess screen. */
   getConfirmation(bookingId: string, customerId: string): Promise<BookingConfirmation | null>;
+
+  listForCustomer(input: ListBookingsInput): Promise<PaginatedBookings>;
+
+  findOwnedById(bookingId: string, customerId: string): Promise<OwnedBookingRow | null>;
+
+  updateReminder(input: UpdateReminderInput): Promise<BookingReminderResult | null>;
+
+  cancelBooking(bookingId: string, customerId: string): Promise<BookingCancelledResult | null>;
 }

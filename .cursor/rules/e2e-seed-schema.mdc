@@ -1,0 +1,51 @@
+---
+description: E2E inline seed SQL must match Flyway table/column names — not API labels
+globs:
+  - test/**/*.e2e-spec.ts
+  - test/helpers/**/*.ts
+alwaysApply: false
+---
+
+# E2E Seed Schema Alignment
+
+E2e suites seed Postgres with inline `dataSource.query(...)` after `truncatePostgres`. **Table and column names must match Flyway migrations**, not mobile API route names or TypeScript DTO fields.
+
+## Source-of-truth order
+
+Before writing any `INSERT`:
+
+1. Existing e2e in the same domain (e.g. `test/bookings-payment.e2e-spec.ts`)
+2. Matching file under `seed/` — see [`.cursor/seed-directory.md`](../seed-directory.md)
+3. `db/migrations/V*.sql` for the table definition
+
+Never guess names from API paths (`/categories` ≠ table `categories`).
+
+## Common traps
+
+| Wrong (invented) | Correct (Flyway) |
+|---|---|
+| `categories` | `service_categories` |
+| `catalog_services` without `target_gender` | `target_gender` is NOT NULL — include it |
+| `sort_order` on `service_categories` | `sort_order` exists on `shop_services`, not categories |
+
+## Bad vs good
+
+```sql
+-- BAD — relation "categories" does not exist
+INSERT INTO categories (id, name, slug, sort_order) VALUES (...);
+
+-- GOOD — matches V6 + bookings-payment.e2e-spec.ts
+INSERT INTO service_categories (id, slug, name, status)
+  VALUES ($1, 'hair-e2e', 'Hair', 'active');
+INSERT INTO catalog_services (id, category_id, name, target_gender, is_active)
+  VALUES ($1, $2, 'Classic Cut', 'male', true);
+```
+
+## Checklist before finishing e2e work
+
+- [ ] Every `INSERT` table name exists in a Flyway migration
+- [ ] Column list matches migration (required NOT NULL columns included)
+- [ ] Pattern copied from working e2e or `seed/*.sql` where possible
+- [ ] `pnpm run test:e2e:prep` then run the single spec: `pnpm exec jest --config ./test/jest-e2e.json --runInBand test/<file>.e2e-spec.ts`
+
+A failed `beforeAll` seed kills **every** test in the suite — verify seed SQL first.

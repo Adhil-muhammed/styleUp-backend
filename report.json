@@ -1515,6 +1515,84 @@
       "operation": "migrate",
       "exception": null,
       "licenseFailed": false
+    },
+    {
+      "initialSchemaVersion": "15",
+      "targetSchemaVersion": "16",
+      "schemaName": "",
+      "migrations": [
+        {
+          "category": "Versioned",
+          "version": "16",
+          "description": "bookings reminders and customer address",
+          "type": "SQL",
+          "filepath": "/home/adhil/styleUp-backend/db/migrations/V16__bookings_reminders_and_customer_address.sql",
+          "executionTime": 55
+        }
+      ],
+      "migrationsExecuted": 1,
+      "success": true,
+      "flywayVersion": "9.22.3",
+      "database": "styleup_test",
+      "warnings": [],
+      "timestamp": "2026-08-06T15:41:33.156316406",
+      "operation": "migrate",
+      "exception": null,
+      "licenseFailed": false
+    },
+    {
+      "initialSchemaVersion": "15",
+      "targetSchemaVersion": "16",
+      "schemaName": "",
+      "migrations": [
+        {
+          "category": "Versioned",
+          "version": "16",
+          "description": "bookings reminders and customer address",
+          "type": "SQL",
+          "filepath": "/home/adhil/styleUp-backend/db/migrations/V16__bookings_reminders_and_customer_address.sql",
+          "executionTime": 1958
+        }
+      ],
+      "migrationsExecuted": 1,
+      "success": true,
+      "flywayVersion": "9.22.3",
+      "database": "postgres",
+      "warnings": [],
+      "timestamp": "2026-08-06T15:48:37.208313772",
+      "operation": "migrate",
+      "exception": null,
+      "licenseFailed": false
+    },
+    {
+      "initialSchemaVersion": "16",
+      "targetSchemaVersion": null,
+      "schemaName": "",
+      "migrations": [],
+      "migrationsExecuted": 0,
+      "success": true,
+      "flywayVersion": "9.22.3",
+      "database": "styleup_test",
+      "warnings": [],
+      "timestamp": "2026-08-06T15:50:39.069272983",
+      "operation": "migrate",
+      "exception": null,
+      "licenseFailed": false
+    },
+    {
+      "initialSchemaVersion": "16",
+      "targetSchemaVersion": null,
+      "schemaName": "",
+      "migrations": [],
+      "migrationsExecuted": 0,
+      "success": true,
+      "flywayVersion": "9.22.3",
+      "database": "styleup_test",
+      "warnings": [],
+      "timestamp": "2026-08-06T16:13:30.385392742",
+      "operation": "migrate",
+      "exception": null,
+      "licenseFailed": false
     }
   ]
 }

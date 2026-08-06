@@ -49,6 +49,15 @@ export class BookingEntity {
   @Column({ name: 'internal_notes', type: 'text', nullable: true })
   internalNotes!: string | null;
 
+  @Column({ name: 'reminder_enabled', type: 'boolean', default: false })
+  reminderEnabled!: boolean;
+
+  @Column({ name: 'reminder_option_id', type: 'varchar', length: 16, nullable: true })
+  reminderOptionId!: string | null;
+
+  @Column({ name: 'cancelled_at', type: 'timestamptz', nullable: true })
+  cancelledAt!: Date | null;
+
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt!: Date;
 

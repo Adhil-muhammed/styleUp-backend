@@ -33,6 +33,9 @@ export class CustomerEntity {
   @Column({ name: 'country', type: 'varchar', length: 64, nullable: true })
   country!: string | null;
 
+  @Column({ name: 'address', type: 'text', nullable: true })
+  address!: string | null;
+
   @Column({ name: 'xp_points', type: 'int', default: 0 })
   xpPoints!: number;
 

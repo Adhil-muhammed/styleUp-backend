@@ -19,13 +19,21 @@ import {
 import {
   BookingRepositoryPort,
   CreateBookingInput,
+  ListBookingsInput,
+  OwnedBookingRow,
+  UpdateReminderInput,
 } from '@/modules/bookings/ports/booking.repository.port';
 import {
   BookingConfirmation,
   BookingCreated,
+  BookingCancelledResult,
+  BookingListTab,
+  BookingReminderResult,
+  PaginatedBookings,
   BookingQuote,
   ResolvedServiceLine,
 } from '@/shared/types';
+import { reminderLabel } from '@/modules/bookings/domain/reminder-option';
 
 const CURRENCY = 'INR';
 const IST_TIMEZONE = 'Asia/Kolkata';
@@ -257,8 +265,225 @@ export class TypeOrmBookingRepository implements BookingRepositoryPort {
     };
   }
 
+  async listForCustomer(input: ListBookingsInput): Promise<PaginatedBookings> {
+    const { customerId, tab, page, perPage } = input;
+    const offset = (page - 1) * perPage;
+    const orderDir = tab === 'upcoming' ? 'ASC' : 'DESC';
+
+    type CountRow = { total: string };
+    const countRows = await this.bookingRepo.manager.query<CountRow[]>(
+      `SELECT COUNT(*)::int AS total
+       FROM bookings b
+       WHERE b.customer_id = $1
+         AND ${this.tabFilterSql(tab)}`,
+      [customerId],
+    );
+    const total = Number(countRows[0]?.total ?? 0);
+
+    type ListRow = {
+      id: string;
+      scheduled_start: Date;
+      booking_status: string;
+      payment_status: string;
+      reminder_enabled: boolean;
+      reminder_option_id: string | null;
+      shop_name: string;
+      shop_address: string;
+      image_uri: string | null;
+      services: string[] | null;
+    };
+
+    const rows = await this.bookingRepo.manager.query<ListRow[]>(
+      `SELECT
+         b.id,
+         b.scheduled_start,
+         b.booking_status,
+         b.payment_status,
+         b.reminder_enabled,
+         b.reminder_option_id,
+         s.name AS shop_name,
+         s.address AS shop_address,
+         COALESCE(
+           s.cover_image_url,
+           (
+             SELECT sg.url
+             FROM shop_gallery sg
+             WHERE sg.shop_id = s.id
+             ORDER BY sg.sort_order ASC, sg.created_at ASC
+             LIMIT 1
+           )
+         ) AS image_uri,
+         COALESCE(
+           array_agg(DISTINCT COALESCE(cs.name, pk.name))
+             FILTER (WHERE cs.name IS NOT NULL OR pk.name IS NOT NULL),
+           ARRAY[]::text[]
+         ) AS services
+       FROM bookings b
+       JOIN shops s ON s.id = b.shop_id
+       LEFT JOIN booking_items bi ON bi.booking_id = b.id
+       LEFT JOIN shop_services ss ON ss.id = bi.shop_service_id
+       LEFT JOIN catalog_services cs ON cs.id = ss.catalog_service_id
+       LEFT JOIN packages pk ON pk.id = bi.package_id
+       WHERE b.customer_id = $1
+         AND ${this.tabFilterSql(tab)}
+       GROUP BY b.id, s.id
+       ORDER BY b.scheduled_start ${orderDir}
+       LIMIT $2 OFFSET $3`,
+      [customerId, perPage, offset],
+    );
+
+    return {
+      data: rows.map((row) => this.toListItem(row, tab)),
+      meta: {
+        total,
+        page,
+        perPage,
+        totalPages: total === 0 ? 0 : Math.ceil(total / perPage),
+      },
+    };
+  }
+
+  async findOwnedById(bookingId: string, customerId: string): Promise<OwnedBookingRow | null> {
+    const booking = await this.bookingRepo.findOne({
+      where: { id: bookingId, customerId },
+    });
+    if (!booking) {
+      return null;
+    }
+    return {
+      id: booking.id,
+      customerId: booking.customerId,
+      scheduledStart: booking.scheduledStart,
+      bookingStatus: booking.bookingStatus,
+      paymentStatus: booking.paymentStatus,
+      reminderEnabled: booking.reminderEnabled,
+      reminderOptionId: booking.reminderOptionId,
+      cancelledAt: booking.cancelledAt,
+    };
+  }
+
+  async updateReminder(input: UpdateReminderInput): Promise<BookingReminderResult | null> {
+    const booking = await this.bookingRepo.findOne({
+      where: { id: input.bookingId, customerId: input.customerId },
+    });
+    if (!booking) {
+      return null;
+    }
+
+    booking.reminderEnabled = input.reminderEnabled;
+    booking.reminderOptionId = input.reminderEnabled ? input.reminderOptionId : null;
+    await this.bookingRepo.save(booking);
+
+    return {
+      id: booking.id,
+      reminderEnabled: booking.reminderEnabled,
+      reminderLabel: booking.reminderEnabled ? reminderLabel(booking.reminderOptionId) : '',
+    };
+  }
+
+  async cancelBooking(
+    bookingId: string,
+    customerId: string,
+  ): Promise<BookingCancelledResult | null> {
+    return this.em.transaction(async (tx) => {
+      const booking = await tx.findOne(BookingEntity, {
+        where: { id: bookingId, customerId },
+        lock: { mode: 'pessimistic_write' },
+      });
+      if (!booking) {
+        return null;
+      }
+
+      const now = new Date();
+      booking.bookingStatus = BookingStatus.CANCELLED;
+      booking.cancelledAt = now;
+      booking.reminderEnabled = false;
+      booking.reminderOptionId = null;
+      await tx.save(BookingEntity, booking);
+
+      await tx.update(
+        BookingItemEntity,
+        { bookingId },
+        { itemStatus: BookingItemStatus.CANCELLED },
+      );
+
+      const timeline = tx.create(BookingTimelineEntity, {
+        bookingId,
+        eventType: TimelineEventType.CANCELLED,
+        note: null,
+      });
+      await tx.save(BookingTimelineEntity, timeline);
+
+      return {
+        id: booking.id,
+        status: this.toLifecycleStatus(booking.bookingStatus),
+        cancelledAt: now.toISOString(),
+      };
+    });
+  }
+
   // ---------------------------------------------------------------------------
   // Private helpers
+  // ---------------------------------------------------------------------------
+
+  private tabFilterSql(tab: BookingListTab): string {
+    const upcoming =
+      "b.scheduled_start >= NOW() AND b.booking_status IN ('pending', 'confirmed', 'in_progress')";
+    return tab === 'upcoming' ? upcoming : `NOT (${upcoming})`;
+  }
+
+  private toListItem(
+    row: {
+      id: string;
+      scheduled_start: Date;
+      booking_status: string;
+      payment_status: string;
+      reminder_enabled: boolean;
+      reminder_option_id: string | null;
+      shop_name: string;
+      shop_address: string;
+      image_uri: string | null;
+      services: string[] | null;
+    },
+    tab: BookingListTab,
+  ) {
+    const dimmed =
+      row.booking_status === BookingStatus.CANCELLED ||
+      row.booking_status === BookingStatus.NO_SHOW ||
+      (tab === 'past' &&
+        row.booking_status === BookingStatus.PENDING &&
+        row.payment_status !== BookingPaymentStatus.PAID);
+
+    const item = {
+      id: row.id,
+      status: tab,
+      dateTimeLabel: formatIstDateTime(row.scheduled_start),
+      shopName: row.shop_name,
+      address: row.shop_address,
+      imageUri: row.image_uri ?? '',
+      services: row.services ?? [],
+      reminderEnabled: row.reminder_enabled,
+      reminderLabel: row.reminder_enabled ? reminderLabel(row.reminder_option_id) : '',
+      ...(dimmed ? { dimmed: true } : {}),
+    };
+    return item;
+  }
+
+  private toLifecycleStatus(status: BookingStatus): BookingCancelledResult['status'] {
+    if (
+      status === BookingStatus.PENDING ||
+      status === BookingStatus.CONFIRMED ||
+      status === BookingStatus.IN_PROGRESS ||
+      status === BookingStatus.COMPLETED ||
+      status === BookingStatus.CANCELLED
+    ) {
+      return status;
+    }
+    return BookingStatus.CANCELLED;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Private helpers (existing)
   // ---------------------------------------------------------------------------
 
   private async buildBookingCreated(

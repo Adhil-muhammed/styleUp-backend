@@ -11,9 +11,11 @@ import { HealthModule } from '@/health/health.module';
 import { AuthModule } from '@/modules/auth';
 import { DiscoveryModule } from '@/modules/discovery';
 import { RatingModule } from '@/modules/rating/rating.module';
+import { NotificationsModule } from '@/modules/notifications';
 import { ShopsModule } from '@/modules/shops';
 import { BookingsModule } from '@/modules/bookings';
 import { PaymentsModule } from '@/modules/payments';
+import { UsersModule } from '@/modules/users';
 import { LoggingInterceptor } from '@/common/interceptors/logging.interceptor';
 
 @Module({
@@ -56,7 +58,9 @@ import { LoggingInterceptor } from '@/common/interceptors/logging.interceptor';
     ShopsModule,
     BookingsModule,
     PaymentsModule,
+    UsersModule,
     RatingModule,
+    NotificationsModule,
     HealthModule,
   ],
   providers: [

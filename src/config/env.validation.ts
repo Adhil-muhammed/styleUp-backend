@@ -66,6 +66,13 @@ export const envValidationSchema = Joi.object({
   RAZORPAY_KEY_SECRET: Joi.string().allow('').optional(),
   RAZORPAY_WEBHOOK_SECRET: Joi.string().allow('').optional(),
   RAZORPAY_ENABLED: Joi.boolean().default(false),
+  BOOKING_CANCEL_MIN_HOURS_BEFORE: Joi.number().integer().min(0).default(2),
+  AVATAR_MAX_BYTES: Joi.number()
+    .integer()
+    .min(1)
+    .default(5 * 1024 * 1024),
+  AVATAR_ALLOWED_MIME_TYPES: Joi.string().default('image/jpeg,image/png,image/webp'),
+  AVATAR_PUBLIC_BASE_URL: Joi.string().uri().default('https://cdn.styleup.local/avatars'),
 })
   .or('JWT_SECRET', 'JWT_ACCESS_SECRET')
   .messages({

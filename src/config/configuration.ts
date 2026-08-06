@@ -75,4 +75,17 @@ export default () => ({
     webhookSecret: process.env['RAZORPAY_WEBHOOK_SECRET'],
     enabled: process.env['RAZORPAY_ENABLED'] === 'true',
   },
+  booking: {
+    cancelMinHoursBefore: parseInt(process.env['BOOKING_CANCEL_MIN_HOURS_BEFORE'] ?? '2', 10),
+  },
+  avatar: {
+    maxBytes: parseInt(process.env['AVATAR_MAX_BYTES'] ?? String(5 * 1024 * 1024), 10),
+    allowedMimeTypes: (
+      process.env['AVATAR_ALLOWED_MIME_TYPES'] ?? 'image/jpeg,image/png,image/webp'
+    )
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean),
+    publicBaseUrl: process.env['AVATAR_PUBLIC_BASE_URL'] ?? 'https://cdn.styleup.local/avatars',
+  },
 });

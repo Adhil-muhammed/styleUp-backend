@@ -47,5 +47,6 @@ JWT for authenticated calls: OTP request → verify with `AUTH_OTP_TEST_CODE` fr
 | Password auth failed for `styleup_test` | Compose interpolated Supabase `.env` over `.env.test` | Always `docker compose --env-file .env.test`; postgres service must not override with `${POSTGRES_*}` from project `.env` |
 | `extension "postgis" is not available` | Plain `postgres` image | Use PostGIS image (e.g. `postgis/postgis:16-3.5-alpine`) |
 | Jest open handles / hang after suite | App or TypeORM not closed | `await app.close()` in `afterAll`; guard if `beforeAll` failed |
+| `relation "categories" does not exist` (or similar) | E2e seed used API names, not Flyway table names | Use `service_categories` etc.; copy from working e2e or `seed/` — see [e2e-seed-schema.mdc](../../rules/e2e-seed-schema.mdc) and [seed-directory.md](../../seed-directory.md) |
 
 When changing “when to write e2e,” update this table and the e2e-testing **rule** lists together. Pitfall changes belong **only** in this skill.

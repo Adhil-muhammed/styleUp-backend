@@ -25,7 +25,14 @@ export type {
   PaymentStatusResult,
   QuoteInput,
   ResolvedServiceLine,
+  BookingListTab,
+  BookingListItem,
+  PaginatedBookings,
+  BookingReminderResult,
+  BookingLifecycleStatus,
+  BookingCancelledResult,
 } from './booking';
+export type { CustomerProfile, AvatarUploadResult } from './profile';
 export type {
   ShopProfileGender,
   ShopSpecialist,

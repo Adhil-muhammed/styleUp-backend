@@ -1,5 +1,6 @@
 import { BookingsController } from './bookings.controller';
 import type { BookingsService } from './bookings.service';
+import { ReminderOption } from '@/modules/bookings/domain/reminder-option';
 import type {
   AvailabilityResult,
   BookingConfirmation,
@@ -16,6 +17,11 @@ const mockService = {
   payBooking: jest.fn(),
   getPaymentStatus: jest.fn(),
   getConfirmation: jest.fn(),
+  listBookings: jest.fn(),
+  updateReminder: jest.fn(),
+  cancelBooking: jest.fn(),
+  rescheduleNotImplemented: jest.fn(),
+  reviewNotImplemented: jest.fn(),
 };
 
 const controller = () => new BookingsController(mockService as unknown as BookingsService);
@@ -156,5 +162,44 @@ describe('BookingsController', () => {
 
     expect(result.success).toBe(true);
     expect(mockService.getConfirmation).toHaveBeenCalledWith(BOOKING_ID, AUTH.userId);
+  });
+
+  it('listBookings delegates status filter and auth userId', async () => {
+    mockService.listBookings.mockResolvedValue({
+      data: [],
+      meta: { total: 0, page: 1, perPage: 20, totalPages: 0 },
+    });
+
+    const result = await controller().listBookings({ status: 'upcoming' }, AUTH);
+
+    expect(result.success).toBe(true);
+    expect(mockService.listBookings).toHaveBeenCalledWith(AUTH.userId, { status: 'upcoming' });
+  });
+
+  it('patchReminder delegates bookingId, userId, and dto', async () => {
+    mockService.updateReminder.mockResolvedValue({
+      id: BOOKING_ID,
+      reminderEnabled: true,
+      reminderLabel: '1 hour before',
+    });
+
+    const dto = { reminderEnabled: true, reminderOptionId: ReminderOption.HOUR_1 };
+    const result = await controller().patchReminder(BOOKING_ID, dto, AUTH);
+
+    expect(result.success).toBe(true);
+    expect(mockService.updateReminder).toHaveBeenCalledWith(BOOKING_ID, AUTH.userId, dto);
+  });
+
+  it('cancelBooking delegates bookingId and userId', async () => {
+    mockService.cancelBooking.mockResolvedValue({
+      id: BOOKING_ID,
+      status: 'cancelled',
+      cancelledAt: new Date().toISOString(),
+    });
+
+    const result = await controller().cancelBooking(BOOKING_ID, AUTH);
+
+    expect(result.success).toBe(true);
+    expect(mockService.cancelBooking).toHaveBeenCalledWith(BOOKING_ID, AUTH.userId);
   });
 });

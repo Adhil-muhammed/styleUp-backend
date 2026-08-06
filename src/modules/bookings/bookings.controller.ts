@@ -1,10 +1,12 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   HttpStatus,
   Param,
+  Patch,
   Post,
   Query,
   UseGuards,
@@ -20,6 +22,10 @@ import {
   PostBookingsDto,
   PostBookingsPayDto,
   PostBookingsQuoteDto,
+  GetBookingsListQueryDto,
+  PatchBookingsReminderDto,
+  PostBookingsRescheduleDto,
+  PostBookingsReviewDto,
 } from '@/modules/bookings/dto';
 
 interface ApiSuccess<T> {
@@ -103,5 +109,57 @@ export class BookingsController {
   ): Promise<ApiSuccess<unknown>> {
     const data = await this.bookingsService.getConfirmation(bookingId, auth.userId);
     return { success: true, data };
+  }
+
+  @Get('mobile/v1/bookings')
+  async listBookings(
+    @Query() query: GetBookingsListQueryDto,
+    @CurrentAuth() auth: AuthenticatedRequest['authUser'],
+  ): Promise<ApiSuccess<unknown>> {
+    const data = await this.bookingsService.listBookings(auth.userId, query);
+    return { success: true, data };
+  }
+
+  @Patch('mobile/v1/bookings/:bookingId/reminder')
+  @ApiParam({ name: 'bookingId', type: String })
+  async patchReminder(
+    @Param('bookingId') bookingId: string,
+    @Body() dto: PatchBookingsReminderDto,
+    @CurrentAuth() auth: AuthenticatedRequest['authUser'],
+  ): Promise<ApiSuccess<unknown>> {
+    const data = await this.bookingsService.updateReminder(bookingId, auth.userId, dto);
+    return { success: true, data };
+  }
+
+  @Delete('mobile/v1/bookings/:bookingId')
+  @ApiParam({ name: 'bookingId', type: String })
+  async cancelBooking(
+    @Param('bookingId') bookingId: string,
+    @CurrentAuth() auth: AuthenticatedRequest['authUser'],
+  ): Promise<ApiSuccess<unknown>> {
+    const data = await this.bookingsService.cancelBooking(bookingId, auth.userId);
+    return { success: true, data };
+  }
+
+  @Post('mobile/v1/bookings/:bookingId/reschedule')
+  @HttpCode(HttpStatus.NOT_IMPLEMENTED)
+  @ApiParam({ name: 'bookingId', type: String })
+  async rescheduleBooking(
+    @Param('bookingId') _bookingId: string,
+    @Body() _dto: PostBookingsRescheduleDto,
+    @CurrentAuth() _auth: AuthenticatedRequest['authUser'],
+  ): Promise<ApiSuccess<unknown>> {
+    this.bookingsService.rescheduleNotImplemented();
+  }
+
+  @Post('mobile/v1/bookings/:bookingId/reviews')
+  @HttpCode(HttpStatus.NOT_IMPLEMENTED)
+  @ApiParam({ name: 'bookingId', type: String })
+  async submitReview(
+    @Param('bookingId') _bookingId: string,
+    @Body() _dto: PostBookingsReviewDto,
+    @CurrentAuth() _auth: AuthenticatedRequest['authUser'],
+  ): Promise<ApiSuccess<unknown>> {
+    this.bookingsService.reviewNotImplemented();
   }
 }

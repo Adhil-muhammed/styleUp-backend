@@ -1,4 +1,5 @@
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { Test } from '@nestjs/testing';
 import {
   AVAILABILITY_REPOSITORY,
@@ -14,6 +15,8 @@ import {
 } from '@/modules/bookings/ports/payment-method.repository.port';
 import { BookingsService } from './bookings.service';
 import { PaymentsService } from '@/modules/payments/payments.service';
+import { BookingReminderProducerService } from '@/modules/notifications/booking-reminder-producer.service';
+import { ReminderOption } from '@/modules/bookings/domain/reminder-option';
 import type {
   BookingConfirmation,
   BookingCreated,
@@ -43,8 +46,24 @@ function makeBookingMock(): BookingMock {
     createBooking: jest.fn(),
     findByIdForCustomer: jest.fn(),
     getConfirmation: jest.fn(),
+    listForCustomer: jest.fn(),
+    findOwnedById: jest.fn(),
+    updateReminder: jest.fn(),
+    cancelBooking: jest.fn(),
   };
 }
+
+const mockReminderProducer = {
+  scheduleReminder: jest.fn(),
+  cancelReminder: jest.fn(),
+};
+
+const mockConfigService = {
+  get: jest.fn((key: string) => {
+    if (key === 'booking.cancelMinHoursBefore') return 2;
+    return undefined;
+  }),
+};
 
 function makePaymentMethodMock(): PaymentMethodMock {
   return {
@@ -114,6 +133,8 @@ describe('BookingsService', () => {
         { provide: BOOKING_REPOSITORY, useValue: bookingMock },
         { provide: PAYMENT_METHOD_REPOSITORY, useValue: pmMock },
         { provide: PaymentsService, useValue: mockPaymentsService },
+        { provide: BookingReminderProducerService, useValue: mockReminderProducer },
+        { provide: ConfigService, useValue: mockConfigService },
       ],
     }).compile();
 
@@ -404,6 +425,152 @@ describe('BookingsService', () => {
       expect(result.methods).toHaveLength(1);
       expect(result.defaultMethodId).toBe(PAYMENT_METHOD_ID);
       expect(pmMock.listForUser).toHaveBeenCalledWith('user-uuid');
+    });
+  });
+
+  describe('listBookings', () => {
+    it('delegates to repository with pagination defaults', async () => {
+      const paginated = {
+        data: [],
+        meta: { total: 0, page: 1, perPage: 20, totalPages: 0 },
+      };
+      bookingMock.listForCustomer.mockResolvedValue(paginated);
+
+      const result = await service.listBookings(CUSTOMER_ID, { status: 'upcoming' });
+
+      expect(result.meta.page).toBe(1);
+      expect(bookingMock.listForCustomer).toHaveBeenCalledWith({
+        customerId: CUSTOMER_ID,
+        tab: 'upcoming',
+        page: 1,
+        perPage: 20,
+      });
+    });
+  });
+
+  describe('updateReminder', () => {
+    const futureStart = new Date(Date.now() + 24 * 60 * 60_000);
+
+    it('throws BOOKING_NOT_FOUND when booking missing', async () => {
+      bookingMock.findOwnedById.mockResolvedValue(null);
+
+      await expect(
+        service.updateReminder(BOOKING_ID, CUSTOMER_ID, {
+          reminderEnabled: true,
+          reminderOptionId: ReminderOption.HOUR_1,
+        }),
+      ).rejects.toBeInstanceOf(NotFoundException);
+    });
+
+    it('throws PAST_BOOKING when appointment already started', async () => {
+      bookingMock.findOwnedById.mockResolvedValue({
+        id: BOOKING_ID,
+        customerId: CUSTOMER_ID,
+        scheduledStart: new Date(Date.now() - 60_000),
+        bookingStatus: 'confirmed',
+        paymentStatus: 'paid',
+        reminderEnabled: false,
+        reminderOptionId: null,
+        cancelledAt: null,
+      });
+
+      await expect(
+        service.updateReminder(BOOKING_ID, CUSTOMER_ID, {
+          reminderEnabled: true,
+          reminderOptionId: ReminderOption.HOUR_1,
+        }),
+      ).rejects.toMatchObject({ response: { code: 'PAST_BOOKING' } });
+    });
+
+    it('schedules reminder job when enabled', async () => {
+      bookingMock.findOwnedById.mockResolvedValue({
+        id: BOOKING_ID,
+        customerId: CUSTOMER_ID,
+        scheduledStart: futureStart,
+        bookingStatus: 'confirmed',
+        paymentStatus: 'paid',
+        reminderEnabled: false,
+        reminderOptionId: null,
+        cancelledAt: null,
+      });
+      bookingMock.updateReminder.mockResolvedValue({
+        id: BOOKING_ID,
+        reminderEnabled: true,
+        reminderLabel: '1 hour before',
+      });
+
+      await service.updateReminder(BOOKING_ID, CUSTOMER_ID, {
+        reminderEnabled: true,
+        reminderOptionId: ReminderOption.HOUR_1,
+      });
+
+      expect(mockReminderProducer.scheduleReminder).toHaveBeenCalledWith(
+        BOOKING_ID,
+        CUSTOMER_ID,
+        futureStart,
+        ReminderOption.HOUR_1,
+      );
+    });
+  });
+
+  describe('cancelBooking', () => {
+    const futureStart = new Date(Date.now() + 24 * 60 * 60_000);
+
+    it('throws ALREADY_CANCELLED when booking already cancelled', async () => {
+      bookingMock.findOwnedById.mockResolvedValue({
+        id: BOOKING_ID,
+        customerId: CUSTOMER_ID,
+        scheduledStart: futureStart,
+        bookingStatus: 'cancelled',
+        paymentStatus: 'paid',
+        reminderEnabled: false,
+        reminderOptionId: null,
+        cancelledAt: new Date(),
+      });
+
+      await expect(service.cancelBooking(BOOKING_ID, CUSTOMER_ID)).rejects.toMatchObject({
+        response: { code: 'ALREADY_CANCELLED' },
+      });
+    });
+
+    it('throws CANCEL_WINDOW_CLOSED when too close to start', async () => {
+      bookingMock.findOwnedById.mockResolvedValue({
+        id: BOOKING_ID,
+        customerId: CUSTOMER_ID,
+        scheduledStart: new Date(Date.now() + 30 * 60_000),
+        bookingStatus: 'confirmed',
+        paymentStatus: 'paid',
+        reminderEnabled: false,
+        reminderOptionId: null,
+        cancelledAt: null,
+      });
+
+      await expect(service.cancelBooking(BOOKING_ID, CUSTOMER_ID)).rejects.toBeInstanceOf(
+        ConflictException,
+      );
+    });
+
+    it('cancels booking and reminder job', async () => {
+      bookingMock.findOwnedById.mockResolvedValue({
+        id: BOOKING_ID,
+        customerId: CUSTOMER_ID,
+        scheduledStart: futureStart,
+        bookingStatus: 'confirmed',
+        paymentStatus: 'paid',
+        reminderEnabled: true,
+        reminderOptionId: ReminderOption.HOUR_1,
+        cancelledAt: null,
+      });
+      bookingMock.cancelBooking.mockResolvedValue({
+        id: BOOKING_ID,
+        status: 'cancelled',
+        cancelledAt: new Date().toISOString(),
+      });
+
+      const result = await service.cancelBooking(BOOKING_ID, CUSTOMER_ID);
+
+      expect(result.status).toBe('cancelled');
+      expect(mockReminderProducer.cancelReminder).toHaveBeenCalledWith(BOOKING_ID);
     });
   });
 });

@@ -36,6 +36,7 @@ Any feature implementation where e2e is relevant → create or update the e2e te
 - Bootstrap with `test/helpers/create-test-app.ts`; close the app in `afterAll`.
 - Assert the mobile API envelope (`success`, `data`, `error.code`, `error.message`).
 - Prefer `truncatePostgres` / `clearRedis` over ad-hoc cleanup.
+- Inline seed SQL in `beforeAll` → follow [e2e-seed-schema.mdc](e2e-seed-schema.mdc) and [seed-directory.md](../seed-directory.md).
 
 Pitfalls and local-stack failure triage → see the **e2e-testing** skill (do not duplicate here).
 
