@@ -3,7 +3,6 @@ import { ConfigService } from '@nestjs/config';
 import { BadRequestException, HttpException, UnauthorizedException } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import {
-  EMAIL_SENDER,
   OTP_STORE,
   SESSION_REPOSITORY,
   SMS_SENDER,
@@ -15,9 +14,9 @@ import {
   OtpStorePort,
   TokenServicePort,
   SmsSenderPort,
-  EmailSenderPort,
   SocialTokenVerifierPort,
 } from '@/modules/auth/ports';
+import { OtpEmailProducerService } from './otp-email-producer.service';
 import { UniqueContactConflictError } from '@/modules/auth/domain/unique-contact-conflict.error';
 import {
   createOtpSession,
@@ -56,7 +55,7 @@ describe('AuthService', () => {
   let otpStore: Mocked<OtpStorePort>;
   let tokens: Mocked<TokenServicePort>;
   let smsSender: Mocked<SmsSenderPort>;
-  let emailSender: Mocked<EmailSenderPort>;
+  let otpEmailProducer: Mocked<Pick<OtpEmailProducerService, 'enqueueSendOtp'>>;
   let socialVerifier: Mocked<SocialTokenVerifierPort>;
 
   beforeEach(async () => {
@@ -95,7 +94,7 @@ describe('AuthService', () => {
       isAccessTokenBlocked: jest.fn(),
     };
     smsSender = { sendOtp: jest.fn() };
-    emailSender = { sendOtp: jest.fn() };
+    otpEmailProducer = { enqueueSendOtp: jest.fn() };
     socialVerifier = { verify: jest.fn() };
 
     const module = await Test.createTestingModule({
@@ -106,7 +105,7 @@ describe('AuthService', () => {
         { provide: OTP_STORE, useValue: otpStore },
         { provide: TOKEN_SERVICE, useValue: tokens },
         { provide: SMS_SENDER, useValue: smsSender },
-        { provide: EMAIL_SENDER, useValue: emailSender },
+        { provide: OtpEmailProducerService, useValue: otpEmailProducer },
         { provide: SOCIAL_TOKEN_VERIFIER, useValue: socialVerifier },
         { provide: ConfigService, useValue: createConfigService() },
       ],
@@ -128,7 +127,7 @@ describe('AuthService', () => {
 
     expect(result.otpSessionId).toBe('otp-session-1');
     expect(result.expiresInSeconds).toBe(300);
-    expect(emailSender.sendOtp).toHaveBeenCalledWith('user@example.com', '123456');
+    expect(otpEmailProducer.enqueueSendOtp).toHaveBeenCalledWith('user@example.com', '123456');
     expect(otpStore.consumeRateLimit).toHaveBeenCalledTimes(3);
   });
 

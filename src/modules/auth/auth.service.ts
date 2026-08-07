@@ -12,8 +12,6 @@ import { ConfigService } from '@nestjs/config';
 import { UniqueContactConflictError } from '@/modules/auth/domain/unique-contact-conflict.error';
 import { AuthTokenPair, OtpMethod, SocialProvider, User } from '@/modules/auth/domain/types';
 import {
-  EMAIL_SENDER,
-  EmailSenderPort,
   OTP_STORE,
   OtpStorePort,
   SESSION_REPOSITORY,
@@ -27,6 +25,7 @@ import {
   USER_REPOSITORY,
   UserRepositoryPort,
 } from '@/modules/auth/ports';
+import { OtpEmailProducerService } from '@/modules/auth/otp-email-producer.service';
 
 const DEFAULT_DEVICE_ID = 'unknown';
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -75,8 +74,8 @@ export class AuthService {
     @Inject(OTP_STORE) private readonly otpStore: OtpStorePort,
     @Inject(TOKEN_SERVICE) private readonly tokens: TokenServicePort,
     @Inject(SMS_SENDER) private readonly smsSender: SmsSenderPort,
-    @Inject(EMAIL_SENDER) private readonly emailSender: EmailSenderPort,
     @Inject(SOCIAL_TOKEN_VERIFIER) private readonly socialVerifier: SocialTokenVerifierPort,
+    private readonly otpEmailProducer: OtpEmailProducerService,
     private readonly config: ConfigService,
   ) {
     this.otpTtlSeconds = this.config.get<number>('auth.otpTtlSeconds') ?? 300;
@@ -446,7 +445,7 @@ export class AuthService {
 
   private async dispatchOtp(method: OtpMethod, contact: string, otp: string): Promise<void> {
     if (method === 'email') {
-      await this.emailSender.sendOtp(contact, otp);
+      await this.otpEmailProducer.enqueueSendOtp(contact, otp);
       return;
     }
     await this.smsSender.sendOtp(contact, otp);

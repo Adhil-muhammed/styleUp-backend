@@ -21,6 +21,9 @@ export class NodemailerEmailSender implements EmailSenderPort {
         user,
         pass: appPassword,
       },
+      pool: true,
+      maxConnections: 5,
+      maxMessages: 100,
     });
   }
 

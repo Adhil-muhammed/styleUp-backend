@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { BullModule } from '@nestjs/bullmq';
 import { AuthController } from '@/modules/auth/auth.controller';
 import { AuthService } from '@/modules/auth/auth.service';
 import {
@@ -30,11 +31,15 @@ import { StubSocialTokenVerifier } from '@/infra/auth/stub-social-token.verifier
 import { AuthGuard } from '@/common/guards/auth.guard';
 import { RedisModule } from '@/infra/redis/redis.module';
 import { UserSessionCleanupService } from '@/modules/auth/user-session-cleanup.service';
+import { OTP_EMAIL_QUEUE } from '@/modules/auth/otp-email.constants';
+import { OtpEmailProducerService } from '@/modules/auth/otp-email-producer.service';
+import { OtpEmailProcessor } from '@/modules/auth/otp-email.processor';
 
 @Module({
   imports: [
     ConfigModule,
     RedisModule,
+    BullModule.registerQueue({ name: OTP_EMAIL_QUEUE }),
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -56,6 +61,8 @@ import { UserSessionCleanupService } from '@/modules/auth/user-session-cleanup.s
     AuthService,
     AuthGuard,
     UserSessionCleanupService,
+    OtpEmailProducerService,
+    OtpEmailProcessor,
     ConsoleEmailSender,
     { provide: USER_REPOSITORY, useClass: TypeOrmUserRepository },
     { provide: SESSION_REPOSITORY, useClass: TypeOrmSessionRepository },
@@ -76,6 +83,6 @@ import { UserSessionCleanupService } from '@/modules/auth/user-session-cleanup.s
     },
     { provide: SOCIAL_TOKEN_VERIFIER, useClass: StubSocialTokenVerifier },
   ],
-  exports: [AuthService, TOKEN_SERVICE, AuthGuard],
+  exports: [AuthService, TOKEN_SERVICE, AuthGuard, OtpEmailProducerService],
 })
 export class AuthModule {}
