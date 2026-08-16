@@ -66,6 +66,8 @@ export const envValidationSchema = Joi.object({
   RAZORPAY_KEY_SECRET: Joi.string().allow('').optional(),
   RAZORPAY_WEBHOOK_SECRET: Joi.string().allow('').optional(),
   RAZORPAY_ENABLED: Joi.boolean().default(false),
+  WHATSAPP_APP_SECRET: Joi.string().allow('').optional(),
+  WHATSAPP_VERIFY_TOKEN: Joi.string().allow('').optional(),
   BOOKING_CANCEL_MIN_HOURS_BEFORE: Joi.number().integer().min(0).default(2),
   AVATAR_MAX_BYTES: Joi.number()
     .integer()

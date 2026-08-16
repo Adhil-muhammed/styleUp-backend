@@ -16,6 +16,7 @@ import { ShopsModule } from '@/modules/shops';
 import { BookingsModule } from '@/modules/bookings';
 import { PaymentsModule } from '@/modules/payments';
 import { UsersModule } from '@/modules/users';
+import { WhatsappModule } from '@/modules/whatsapp';
 import { LoggingInterceptor } from '@/common/interceptors/logging.interceptor';
 
 @Module({
@@ -59,6 +60,7 @@ import { LoggingInterceptor } from '@/common/interceptors/logging.interceptor';
     BookingsModule,
     PaymentsModule,
     UsersModule,
+    WhatsappModule,
     RatingModule,
     NotificationsModule,
     HealthModule,

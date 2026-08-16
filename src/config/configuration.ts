@@ -75,6 +75,10 @@ export default () => ({
     webhookSecret: process.env['RAZORPAY_WEBHOOK_SECRET'],
     enabled: process.env['RAZORPAY_ENABLED'] === 'true',
   },
+  whatsapp: {
+    appSecret: process.env['WHATSAPP_APP_SECRET'] || undefined,
+    verifyToken: process.env['WHATSAPP_VERIFY_TOKEN'] || undefined,
+  },
   booking: {
     cancelMinHoursBefore: parseInt(process.env['BOOKING_CANCEL_MIN_HOURS_BEFORE'] ?? '2', 10),
   },
