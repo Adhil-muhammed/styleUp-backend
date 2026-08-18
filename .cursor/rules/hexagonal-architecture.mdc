@@ -161,7 +161,7 @@ Rules:
 
 - Import the other module's NestJS module; inject its **exported service**
 - Never import another module's port adapter, schema, entity, or Mongoose model
-- If two modules need each other circularly, extract shared logic to a third module or shared domain service — do not bypass with direct DB access
+- If two modules need each other circularly, extract shared logic to a third module or shared domain service — do not bypass with direct DB access. See [nest-module-dependencies.mdc](nest-module-dependencies.mdc) for tier rules and MSG91 example.
 - **Do not introduce `@nestjs/event-emitter` or similar without explicit approval** — not in `package.json` today
 
 ---

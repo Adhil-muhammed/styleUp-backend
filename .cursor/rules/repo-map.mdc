@@ -19,6 +19,7 @@ Single NestJS 10 API (hexagonal). Postgres (TypeORM + Flyway) + Redis (OTP/sessi
 | If the task involves... | Look first in... |
 |---|---|
 | App bootstrap / module wiring | `src/main.ts`, `src/app.module.ts` |
+| Module imports / circular deps | `.cursor/rules/nest-module-dependencies.mdc` |
 | Adding/changing an API route | `src/modules/<domain>/*.controller.ts`, `dto/` |
 | Business / domain logic | `src/modules/<domain>/*.service.ts`, `domain/`, `ports/` |
 | Persistence adapters (Postgres) | `src/infra/persistence/postgres/<domain>/` |

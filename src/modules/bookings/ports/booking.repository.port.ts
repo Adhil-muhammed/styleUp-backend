@@ -7,6 +7,7 @@ import {
   PaginatedBookings,
   ResolvedServiceLine,
 } from '@/shared/types';
+import { BookingMessagingContext } from '@/modules/bookings/domain/booking-messaging-context';
 
 export const BOOKING_REPOSITORY = Symbol('BOOKING_REPOSITORY');
 
@@ -80,4 +81,6 @@ export interface BookingRepositoryPort {
   updateReminder(input: UpdateReminderInput): Promise<BookingReminderResult | null>;
 
   cancelBooking(bookingId: string, customerId: string): Promise<BookingCancelledResult | null>;
+
+  findMessagingContext(bookingId: string): Promise<BookingMessagingContext | null>;
 }

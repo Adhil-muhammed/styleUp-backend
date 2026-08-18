@@ -78,6 +78,24 @@ export default () => ({
   whatsapp: {
     appSecret: process.env['WHATSAPP_APP_SECRET'] || undefined,
     verifyToken: process.env['WHATSAPP_VERIFY_TOKEN'] || undefined,
+    graphApiVersion: process.env['WHATSAPP_GRAPH_API_VERSION'] || 'v21.0',
+  },
+  messaging: {
+    whatsappProvider: process.env['MESSAGING_WHATSAPP_PROVIDER'] ?? 'console',
+  },
+  msg91: {
+    authKey: process.env['MSG91_AUTH_KEY'] || undefined,
+    integratedNumber: process.env['MSG91_WHATSAPP_INTEGRATED_NUMBER'] || undefined,
+    namespace: process.env['MSG91_NAMESPACE'] || undefined,
+    apiBaseUrl: process.env['MSG91_WHATSAPP_API_BASE'] ?? 'https://control.msg91.com',
+    webhookSecret: process.env['MSG91_WEBHOOK_SECRET'] || undefined,
+    templates: {
+      bookingConfirmation:
+        process.env['MSG91_TEMPLATE_BOOKING_CONFIRMATION'] ?? 'booking_confirmation',
+      bookingReminder: process.env['MSG91_TEMPLATE_BOOKING_REMINDER'] ?? 'booking_reminder',
+      bookingCancellation:
+        process.env['MSG91_TEMPLATE_BOOKING_CANCELLATION'] ?? 'booking_cancellation',
+    },
   },
   booking: {
     cancelMinHoursBefore: parseInt(process.env['BOOKING_CANCEL_MIN_HOURS_BEFORE'] ?? '2', 10),

@@ -68,6 +68,16 @@ export const envValidationSchema = Joi.object({
   RAZORPAY_ENABLED: Joi.boolean().default(false),
   WHATSAPP_APP_SECRET: Joi.string().allow('').optional(),
   WHATSAPP_VERIFY_TOKEN: Joi.string().allow('').optional(),
+  WHATSAPP_GRAPH_API_VERSION: Joi.string().default('v21.0'),
+  MESSAGING_WHATSAPP_PROVIDER: Joi.string().valid('msg91', 'console').default('console'),
+  MSG91_AUTH_KEY: Joi.string().allow('').optional(),
+  MSG91_WHATSAPP_INTEGRATED_NUMBER: Joi.string().allow('').optional(),
+  MSG91_NAMESPACE: Joi.string().allow('').optional(),
+  MSG91_WHATSAPP_API_BASE: Joi.string().uri().default('https://control.msg91.com'),
+  MSG91_WEBHOOK_SECRET: Joi.string().allow('').optional(),
+  MSG91_TEMPLATE_BOOKING_CONFIRMATION: Joi.string().allow('').optional(),
+  MSG91_TEMPLATE_BOOKING_REMINDER: Joi.string().allow('').optional(),
+  MSG91_TEMPLATE_BOOKING_CANCELLATION: Joi.string().allow('').optional(),
   BOOKING_CANCEL_MIN_HOURS_BEFORE: Joi.number().integer().min(0).default(2),
   AVATAR_MAX_BYTES: Joi.number()
     .integer()
@@ -79,4 +89,25 @@ export const envValidationSchema = Joi.object({
   .or('JWT_SECRET', 'JWT_ACCESS_SECRET')
   .messages({
     'object.missing': 'JWT_ACCESS_SECRET or JWT_SECRET is required',
+  })
+  .custom((value, helpers) => {
+    if (value.MESSAGING_WHATSAPP_PROVIDER === 'msg91') {
+      if (!value.MSG91_AUTH_KEY) {
+        return helpers.error('any.custom', {
+          message: 'MSG91_AUTH_KEY is required when MESSAGING_WHATSAPP_PROVIDER=msg91',
+        });
+      }
+      if (!value.MSG91_WHATSAPP_INTEGRATED_NUMBER) {
+        return helpers.error('any.custom', {
+          message:
+            'MSG91_WHATSAPP_INTEGRATED_NUMBER is required when MESSAGING_WHATSAPP_PROVIDER=msg91',
+        });
+      }
+      if (!value.MSG91_NAMESPACE) {
+        return helpers.error('any.custom', {
+          message: 'MSG91_NAMESPACE is required when MESSAGING_WHATSAPP_PROVIDER=msg91',
+        });
+      }
+    }
+    return value;
   });

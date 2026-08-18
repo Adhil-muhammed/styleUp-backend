@@ -28,6 +28,11 @@ import {
   PatchBookingsReminderDto,
 } from '@/modules/bookings/dto';
 import { PaymentsService } from '@/modules/payments/payments.service';
+import { buildBookingMessageVariables } from '@/modules/bookings/domain/build-booking-message-variables';
+import {
+  MESSAGING_DISPATCH,
+  MessagingDispatchPort,
+} from '@/modules/messaging/ports/messaging-dispatch.port';
 import { BookingReminderProducerService } from '@/modules/notifications/booking-reminder-producer.service';
 import { ReminderOption, isReminderOption } from '@/modules/bookings/domain/reminder-option';
 import {
@@ -58,6 +63,8 @@ export class BookingsService {
     private readonly paymentMethodRepo: PaymentMethodRepositoryPort,
     private readonly paymentsService: PaymentsService,
     private readonly reminderProducer: BookingReminderProducerService,
+    @Inject(MESSAGING_DISPATCH)
+    private readonly messagingDispatch: MessagingDispatchPort,
     private readonly config: ConfigService,
   ) {}
 
@@ -395,6 +402,21 @@ export class BookingsService {
     }
 
     await this.reminderProducer.cancelReminder(bookingId);
+
+    try {
+      const context = await this.bookingRepo.findMessagingContext(bookingId);
+      if (context) {
+        await this.messagingDispatch.sendBookingCancellation({
+          shopId: context.shopId,
+          bookingId: context.bookingId,
+          recipient: context.recipient,
+          variables: buildBookingMessageVariables(context, 'cancellation'),
+        });
+      }
+    } catch {
+      // Cancellation message failure must not roll back the booking cancel.
+    }
+
     return result;
   }
 

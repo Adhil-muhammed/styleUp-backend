@@ -14,6 +14,7 @@ import {
   BookingPaymentContext,
   BookingPaymentPort,
 } from '@/modules/payments/ports/booking-payment.port';
+import { BookingMessagingContext } from '@/modules/bookings/domain/booking-messaging-context';
 
 @Injectable()
 export class TypeOrmBookingPaymentAdapter implements BookingPaymentPort {
@@ -101,6 +102,51 @@ export class TypeOrmBookingPaymentAdapter implements BookingPaymentPort {
     return {
       bookingStatus: booking.bookingStatus,
       paymentStatus: booking.paymentStatus,
+    };
+  }
+
+  async findMessagingContext(bookingId: string): Promise<BookingMessagingContext | null> {
+    type MessagingRow = {
+      booking_id: string;
+      shop_id: string;
+      scheduled_start: Date;
+      display_name: string | null;
+      phone: string | null;
+      shop_name: string | null;
+    };
+
+    const rows = await this.bookingRepo.query<MessagingRow[]>(
+      `SELECT b.id AS booking_id,
+              b.shop_id,
+              b.scheduled_start,
+              c.display_name,
+              u.phone,
+              s.name AS shop_name
+       FROM bookings b
+       JOIN customers c ON c.user_id = b.customer_id
+       JOIN users u ON u.id = c.user_id
+       JOIN shops s ON s.id = b.shop_id
+       WHERE b.id = $1`,
+      [bookingId],
+    );
+
+    const row = rows[0];
+    if (!row) {
+      return null;
+    }
+
+    const recipient = row.phone?.trim() ?? '';
+    if (!recipient) {
+      return null;
+    }
+
+    return {
+      bookingId: row.booking_id,
+      shopId: row.shop_id,
+      recipient,
+      customerName: row.display_name ?? '',
+      shopName: row.shop_name ?? '',
+      scheduledStart: row.scheduled_start,
     };
   }
 }

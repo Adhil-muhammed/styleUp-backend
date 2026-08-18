@@ -2,6 +2,7 @@ import { ConflictException, NotFoundException } from '@nestjs/common';
 import { TransactionStatus } from '@/infra/persistence/postgres/transactions/transactions.enums';
 import { PaymentStateMachineService } from '@/modules/payments/payment-state-machine.service';
 import { PaymentsService } from '@/modules/payments/payments.service';
+import { MessagingDispatchPort } from '@/modules/messaging/ports/messaging-dispatch.port';
 import { BookingPaymentPort } from '@/modules/payments/ports/booking-payment.port';
 import { PaymentGatewayPort } from '@/modules/payments/ports/payment-gateway.port';
 import {
@@ -47,13 +48,27 @@ function makeMocks() {
     markBookingPaid: jest.fn(),
     markBookingPaymentFailed: jest.fn(),
     getPaymentStatus: jest.fn(),
+    findMessagingContext: jest.fn(),
   };
 
   const webhookEvents: jest.Mocked<WebhookEventRepositoryPort> = {
     tryRecordEvent: jest.fn(),
   };
 
-  const stateMachine = new PaymentStateMachineService(paymentRepo, bookingPayment);
+  const messagingDispatch: Pick<
+    MessagingDispatchPort,
+    'sendBookingConfirmation' | 'sendBookingReminder' | 'sendBookingCancellation'
+  > = {
+    sendBookingConfirmation: jest.fn().mockResolvedValue({ logId: 'log-1' }),
+    sendBookingReminder: jest.fn(),
+    sendBookingCancellation: jest.fn(),
+  };
+
+  const stateMachine = new PaymentStateMachineService(
+    paymentRepo,
+    bookingPayment,
+    messagingDispatch as MessagingDispatchPort,
+  );
 
   const service = new PaymentsService(
     paymentRepo,

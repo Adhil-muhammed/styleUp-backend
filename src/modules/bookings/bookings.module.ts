@@ -1,8 +1,9 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuthModule } from '@/modules/auth';
 import { PaymentsModule } from '@/modules/payments';
 import { NotificationsModule } from '@/modules/notifications';
+import { MessagingModule } from '@/modules/messaging';
 import { BookingsController } from '@/modules/bookings/bookings.controller';
 import { BookingsService } from '@/modules/bookings/bookings.service';
 import { AVAILABILITY_REPOSITORY } from '@/modules/bookings/ports/availability.repository.port';
@@ -31,7 +32,8 @@ import { UserEntity } from '@/infra/persistence/postgres/auth/user.entity';
   imports: [
     AuthModule,
     PaymentsModule,
-    NotificationsModule,
+    forwardRef(() => NotificationsModule),
+    MessagingModule,
     TypeOrmModule.forFeature([
       ScheduleEntity,
       ScheduleExceptionEntity,
@@ -57,5 +59,6 @@ import { UserEntity } from '@/infra/persistence/postgres/auth/user.entity';
     { provide: BOOKING_REPOSITORY, useClass: TypeOrmBookingRepository },
     { provide: PAYMENT_METHOD_REPOSITORY, useClass: TypeOrmPaymentMethodRepository },
   ],
+  exports: [BOOKING_REPOSITORY],
 })
 export class BookingsModule {}

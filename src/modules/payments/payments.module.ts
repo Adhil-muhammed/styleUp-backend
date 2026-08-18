@@ -11,6 +11,7 @@ import { BookingItemEntity } from '@/infra/persistence/postgres/transactions/boo
 import { BookingTimelineEntity } from '@/infra/persistence/postgres/transactions/booking-timeline.entity';
 import { PaymentEntity } from '@/infra/persistence/postgres/transactions/payment.entity';
 import { PaymentWebhookEventEntity } from '@/infra/persistence/postgres/transactions/payment-webhook-event.entity';
+import { MessagingModule } from '@/modules/messaging';
 import { PaymentStateMachineService } from '@/modules/payments/payment-state-machine.service';
 import { PaymentsWebhookController } from '@/modules/payments/payments-webhook.controller';
 import { PaymentsService } from '@/modules/payments/payments.service';
@@ -22,6 +23,7 @@ import { WEBHOOK_EVENT_REPOSITORY } from '@/modules/payments/ports/webhook-event
 @Module({
   imports: [
     ConfigModule,
+    MessagingModule,
     TypeOrmModule.forFeature([
       PaymentEntity,
       PaymentWebhookEventEntity,

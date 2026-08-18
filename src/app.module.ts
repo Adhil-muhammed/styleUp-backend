@@ -16,6 +16,7 @@ import { ShopsModule } from '@/modules/shops';
 import { BookingsModule } from '@/modules/bookings';
 import { PaymentsModule } from '@/modules/payments';
 import { UsersModule } from '@/modules/users';
+import { MessagingModule } from '@/modules/messaging';
 import { WhatsappModule } from '@/modules/whatsapp';
 import { LoggingInterceptor } from '@/common/interceptors/logging.interceptor';
 
@@ -60,6 +61,7 @@ import { LoggingInterceptor } from '@/common/interceptors/logging.interceptor';
     BookingsModule,
     PaymentsModule,
     UsersModule,
+    MessagingModule,
     WhatsappModule,
     RatingModule,
     NotificationsModule,

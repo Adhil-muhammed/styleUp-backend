@@ -1,3 +1,5 @@
+import { BookingMessagingContext } from '@/modules/bookings/domain/booking-messaging-context';
+
 export const BOOKING_PAYMENT = Symbol('BOOKING_PAYMENT');
 
 export interface BookingPaymentContext {
@@ -24,4 +26,6 @@ export interface BookingPaymentPort {
     bookingId: string,
     customerId: string,
   ): Promise<{ bookingStatus: string; paymentStatus: string } | null>;
+
+  findMessagingContext(bookingId: string): Promise<BookingMessagingContext | null>;
 }

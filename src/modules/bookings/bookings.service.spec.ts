@@ -15,6 +15,10 @@ import {
 } from '@/modules/bookings/ports/payment-method.repository.port';
 import { BookingsService } from './bookings.service';
 import { PaymentsService } from '@/modules/payments/payments.service';
+import {
+  MESSAGING_DISPATCH,
+  MessagingDispatchPort,
+} from '@/modules/messaging/ports/messaging-dispatch.port';
 import { BookingReminderProducerService } from '@/modules/notifications/booking-reminder-producer.service';
 import { ReminderOption } from '@/modules/bookings/domain/reminder-option';
 import type {
@@ -50,12 +54,22 @@ function makeBookingMock(): BookingMock {
     findOwnedById: jest.fn(),
     updateReminder: jest.fn(),
     cancelBooking: jest.fn(),
+    findMessagingContext: jest.fn(),
   };
 }
 
 const mockReminderProducer = {
   scheduleReminder: jest.fn(),
   cancelReminder: jest.fn(),
+};
+
+const mockMessagingDispatch: Pick<
+  MessagingDispatchPort,
+  'sendBookingCancellation' | 'sendBookingConfirmation' | 'sendBookingReminder'
+> = {
+  sendBookingCancellation: jest.fn().mockResolvedValue({ logId: 'log-1' }),
+  sendBookingConfirmation: jest.fn(),
+  sendBookingReminder: jest.fn(),
 };
 
 const mockConfigService = {
@@ -134,6 +148,7 @@ describe('BookingsService', () => {
         { provide: PAYMENT_METHOD_REPOSITORY, useValue: pmMock },
         { provide: PaymentsService, useValue: mockPaymentsService },
         { provide: BookingReminderProducerService, useValue: mockReminderProducer },
+        { provide: MESSAGING_DISPATCH, useValue: mockMessagingDispatch },
         { provide: ConfigService, useValue: mockConfigService },
       ],
     }).compile();
@@ -566,11 +581,26 @@ describe('BookingsService', () => {
         status: 'cancelled',
         cancelledAt: new Date().toISOString(),
       });
+      bookingMock.findMessagingContext.mockResolvedValue({
+        shopId: SHOP_ID,
+        bookingId: BOOKING_ID,
+        recipient: '+919876543210',
+        customerName: 'Adhil',
+        shopName: "Meera's Cuts",
+        scheduledStart: futureStart,
+      });
 
       const result = await service.cancelBooking(BOOKING_ID, CUSTOMER_ID);
 
       expect(result.status).toBe('cancelled');
       expect(mockReminderProducer.cancelReminder).toHaveBeenCalledWith(BOOKING_ID);
+      expect(mockMessagingDispatch.sendBookingCancellation).toHaveBeenCalledWith(
+        expect.objectContaining({
+          shopId: SHOP_ID,
+          bookingId: BOOKING_ID,
+          recipient: '+919876543210',
+        }),
+      );
     });
   });
 });

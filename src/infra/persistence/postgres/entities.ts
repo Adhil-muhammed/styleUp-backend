@@ -25,6 +25,7 @@ import { PaymentMethodEntity } from '@/infra/persistence/postgres/transactions/p
 import { PaymentWebhookEventEntity } from '@/infra/persistence/postgres/transactions/payment-webhook-event.entity';
 import { RefundEntity } from '@/infra/persistence/postgres/transactions/refund.entity';
 import { ReviewEntity } from '@/infra/persistence/postgres/transactions/review.entity';
+import { MessageLogEntity } from '@/infra/persistence/postgres/messaging/message-log.entity';
 import { SettlementEntity } from '@/infra/persistence/postgres/transactions/settlement.entity';
 
 export const POSTGRES_ENTITIES = [
@@ -56,4 +57,5 @@ export const POSTGRES_ENTITIES = [
   RefundEntity,
   SettlementEntity,
   ReviewEntity,
+  MessageLogEntity,
 ];

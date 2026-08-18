@@ -1593,6 +1593,54 @@
       "operation": "migrate",
       "exception": null,
       "licenseFailed": false
+    },
+    {
+      "initialSchemaVersion": "16",
+      "targetSchemaVersion": "17",
+      "schemaName": "",
+      "migrations": [
+        {
+          "category": "Versioned",
+          "version": "17",
+          "description": "message logs",
+          "type": "SQL",
+          "filepath": "/home/adhil/styleUp-backend/db/migrations/V17__message_logs.sql",
+          "executionTime": 1795
+        }
+      ],
+      "migrationsExecuted": 1,
+      "success": true,
+      "flywayVersion": "9.22.3",
+      "database": "postgres",
+      "warnings": [],
+      "timestamp": "2026-08-17T16:29:03.862731488",
+      "operation": "migrate",
+      "exception": null,
+      "licenseFailed": false
+    },
+    {
+      "initialSchemaVersion": "17",
+      "targetSchemaVersion": "18",
+      "schemaName": "",
+      "migrations": [
+        {
+          "category": "Versioned",
+          "version": "18",
+          "description": "message logs delivery status",
+          "type": "SQL",
+          "filepath": "/home/adhil/styleUp-backend/db/migrations/V18__message_logs_delivery_status.sql",
+          "executionTime": 2484
+        }
+      ],
+      "migrationsExecuted": 1,
+      "success": true,
+      "flywayVersion": "9.22.3",
+      "database": "postgres",
+      "warnings": [],
+      "timestamp": "2026-08-18T15:26:43.488870532",
+      "operation": "migrate",
+      "exception": null,
+      "licenseFailed": false
     }
   ]
 }

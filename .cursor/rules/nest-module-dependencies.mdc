@@ -1,0 +1,130 @@
+---
+description: NestJS module import tiers, circular dependency prevention, and forwardRef policy for StyleUp backend.
+globs: src/**/*.module.ts
+alwaysApply: true
+---
+
+# NestJS Module Dependency Rules
+
+Consult this rule **before adding any `imports: [...]` entry** in a `*.module.ts`.
+
+## Module tiers (imports flow downward only)
+
+```mermaid
+flowchart TB
+  subgraph tier3 [Tier3_Domain]
+    Bookings[BookingsModule]
+    Payments[PaymentsModule]
+    Notifications[NotificationsModule]
+    Shops[ShopsModule]
+  end
+  subgraph tier2 [Tier2_CrossCutting]
+    Auth[AuthModule]
+    Rating[RatingModule]
+    Whatsapp[WhatsappModule]
+  end
+  subgraph tier1 [Tier1_Utility]
+    Messaging[MessagingModule]
+  end
+
+  Bookings --> Messaging
+  Bookings --> Payments
+  Bookings --> Notifications
+  Payments --> Messaging
+  Notifications --> Messaging
+  Notifications --> Bookings
+```
+
+| Tier | Modules | May import | Must NOT import |
+|---|---|---|---|
+| **Utility (leaf)** | `MessagingModule` | `ConfigModule`, `AuthModule`, `BullModule`, own entities only | Any domain module (`Bookings`, `Payments`, `Notifications`, `Shops`) |
+| **Domain** | `Bookings`, `Payments`, `Shops`, etc. | Utility modules; peer modules **one-way only** | Must not cause utility modules to import back |
+| **Cross-cutting** | `Auth`, `Rating`, `Whatsapp` | Utility + infra | Domain business modules (unless explicitly exported API) |
+
+**Hard rule:** If module A imports B, then B must not import A (directly or transitively). `forwardRef` is a last resort, not the default.
+
+---
+
+## Principle: low-level accepts data, high-level fetches data
+
+Utility modules must not load domain data. Callers query the DB, build inputs, then call the utility.
+
+### MSG91 example (canonical)
+
+**Bad — causes tier inversion or hidden cycles:**
+
+- `MessagingModule` imports `BookingsModule` or runs booking SQL internally
+- `MessagingDispatchService` accepts `bookingId` and loads customer phone itself
+
+**Good — current implementation:**
+
+- [`MessagingDispatchPort`](src/modules/messaging/ports/messaging-dispatch.port.ts) accepts fully hydrated `SendBookingMessageInput` (`shopId`, `bookingId`, `recipient`, `variables`)
+- Callers own DB lookup:
+  - [`PaymentStateMachineService`](src/modules/payments/payment-state-machine.service.ts) → `BOOKING_PAYMENT.findMessagingContext()`
+  - [`BookingsService`](src/modules/bookings/bookings.service.ts) → `BOOKING_REPOSITORY.findMessagingContext()`
+  - [`BookingReminderProcessor`](src/modules/notifications/booking-reminder.processor.ts) → `BOOKING_REPOSITORY` (exported from BookingsModule)
+
+Inject via port tokens (`MESSAGING_DISPATCH`, `BOOKING_REPOSITORY`) — not concrete adapter classes.
+
+---
+
+## Known StyleUp cycle: Bookings ↔ Notifications
+
+```
+BookingsModule      → NotificationsModule   (schedules reminder jobs)
+NotificationsModule → BookingsModule        (needs BOOKING_REPOSITORY for reminder send)
+```
+
+**Approved mitigation (in codebase today):**
+
+- `forwardRef(() => NotificationsModule)` in [`bookings.module.ts`](src/modules/bookings/bookings.module.ts)
+- `forwardRef(() => BookingsModule)` in [`notifications.module.ts`](src/modules/notifications/notifications.module.ts)
+- Export only `BOOKING_REPOSITORY` from BookingsModule — not adapters or internal services
+
+**When using `forwardRef`:** add a one-line comment in the module file explaining the cycle.
+
+**Preferred long-term refactor:** extract `BookingsPersistenceModule` (exports `BOOKING_REPOSITORY` only, no Notifications import) — both Bookings and Notifications import it, eliminating the cycle.
+
+---
+
+## Payments ↔ Bookings — cycle avoided
+
+```
+BookingsModule → PaymentsModule   (exists today)
+PaymentsModule → BookingsModule   (FORBIDDEN — would cycle)
+```
+
+[`PaymentsModule`](src/modules/payments/payments.module.ts) does **not** import `BookingsModule`. Instead, [`BookingPaymentPort`](src/modules/payments/ports/booking-payment.port.ts) owns `findMessagingContext()` with its own TypeORM adapter. Duplicate SQL in adapters is acceptable to preserve acyclic imports.
+
+---
+
+## Pre-import checklist
+
+Run before merging any `*.module.ts` change:
+
+- [ ] Draw the import arrow: does the target module already import me (directly or via a third module)?
+- [ ] Can the dependency be inverted via a **port + adapter** in the importing module instead?
+- [ ] Can the callee accept **pre-hydrated input** instead of importing the caller's module?
+- [ ] If exporting a repository token, export the **token only** — not adapters or internal services
+- [ ] If `forwardRef` is required, add a one-line comment explaining the cycle
+- [ ] Run `pnpm run build` — Nest DI fails loudly on unresolved circular deps at bootstrap
+
+---
+
+## Forbidden patterns (flag in review)
+
+| Pattern | Why bad | Fix |
+|---|---|---|
+| Utility module imports domain module | Inverts tier hierarchy | Caller hydrates inputs |
+| Service imports another module's TypeORM entity/adapter | Bypasses ports | Inject port token |
+| Both modules import each other without `forwardRef` | Nest bootstrap failure | Refactor or `forwardRef` + comment |
+| `forwardRef` to avoid extracting shared port | Masks design smell | Extract lookup/persistence module |
+| Exporting adapters from feature modules | Leaks infra, tightens coupling | Export service or port token only |
+
+---
+
+## Related rules and skills
+
+- [hexagonal-architecture.mdc](hexagonal-architecture.mdc) — port/adapter pattern
+- [architecture.mdc](architecture.mdc) — module isolation
+- [.cursor/skills/whatsapp-messaging/SKILL.md](../skills/whatsapp-messaging/SKILL.md) — MSG91 caller-hydration example
