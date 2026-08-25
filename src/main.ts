@@ -42,16 +42,15 @@ async function bootstrap(): Promise<void> {
 
   app.useGlobalFilters(new AllExceptionsFilter());
 
-  if (nodeEnv !== 'production') {
-    const swaggerConfig = new DocumentBuilder()
-      .setTitle('StyleUp API')
-      .setDescription('StyleUp booking marketplace REST API')
-      .setVersion('1.0')
-      .addBearerAuth()
-      .build();
-    const document = SwaggerModule.createDocument(app, swaggerConfig);
-    SwaggerModule.setup('api/docs', app, document);
-  }
+  const swaggerConfig = new DocumentBuilder()
+    .setTitle('StyleUp API')
+    .setDescription('StyleUp booking marketplace REST API')
+    .setVersion('1.0')
+    .addBearerAuth()
+    .build();
+  const document = SwaggerModule.createDocument(app, swaggerConfig);
+  SwaggerModule.setup('api/docs', app, document);
+  logger.log('Swagger available at /api/docs', 'Bootstrap');
 
   app.enableShutdownHooks();
 
